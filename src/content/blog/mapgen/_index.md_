@@ -1,0 +1,7 @@
+---
+title: "Map generation with Burst"
+description: "Procedural generation of terrains and maps in a hand-drawn style, in Unity using Burst compiled jobs."
+type: "serie"
+
+draft: true
+---

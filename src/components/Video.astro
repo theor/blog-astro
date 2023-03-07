@@ -6,10 +6,10 @@
 } 
 const {src, height, caption} = Astro.props;
 const src2 = await src;
-// replace src="([^"]*") by src={import("./$1)}
+// replace src={import("./([^")}]*") by src={import("./$1)}
 ---
 
-  <div className="blog-post-video" style={{ height: height ?? "250px" }}>
+  <div class="blog-post-video" style={{ height: height ?? "250px" }}>
     <video src={src2.default} autoPlay muted controls loop style={{ height: "100%" }} />
     {caption && <span>{caption}</span>}
   </div>

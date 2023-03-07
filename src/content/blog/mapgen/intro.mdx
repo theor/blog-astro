@@ -1,0 +1,36 @@
+---
+title: "Map Generation: Introduction"
+author: "theor"
+type: "post"
+pubDate: 2021-03-08T01:19:39-05:00
+description: ""
+banner: "intro/3d.png"
+tags: ["procedural generation", "unity", "burst"]
+serie_part: 1
+---
+
+I always loved procedural generation, and was really impressed by [mewo2's fantasy maps](https://mewo2.com/notes/terrain/). I decided to give it a try using Unity and the [Burst Compiler](https://docs.unity3d.com/Packages/com.unity.burst@0.2/manual/index.html), an amazing piece of tech developed at Unity. It was also the opportunity to dig into SVG and implement a few algorithms and white papers: Delaunay's triangulation, a depression filling algorithm, a cartographic labeling algorithm based on simulated annealing, water network computation and a few others. I'll write a (probably long) series of articles detailing the interesting parts and algorithms of the project and my general process to approach this kind of topic.
+
+I could have used [Unity's ECS](https://docs.unity3d.com/Packages/com.unity.entities@0.17/manual/index.html), but it seemed a bit overkill. However I'll use the [job system](https://docs.unity3d.com/Manual/JobSystem.html) directly with Burst, and render just enough 3d to visualize the generated terrain. The map itself will be an SVG file written on disk.
+
+The steps will be
+
+- Generate random points
+- Write a custom Burst-compatible data structure to store polygons and generate a Delaunay triangulation using [Bowyer-Watson](https://en.wikipedia.org/wiki/Bowyer%E2%80%93Watson_algorithm)
+- Assign a height to each polygon
+- Fill the depressions using [Planchon-Darboux](https://horizon.documentation.ird.fr/exl-doc/pleins_textes/divers20-05/010031925.pdf)
+- Clean the coastlines
+- Compute the water flow over the map by following down slopes
+- Create water sources and follow the water network until it reaches the sea
+- Render all of that to SVG (which itself will require many more steps)
+
+Burst-compatible code must satisfy multiple constraints:
+
+- No reference types or classes
+- which means no boxing of a struct to an interface type
+- struct instance methods and static methods only
+- no managed collections, only [Native Containers](https://docs.unity3d.com/Manual/JobSystemNativeContainer.html)
+
+So Burst strongly favors data-oriented design/programming. I'll refer you to [this list of resources about DOD and Mike Acton's talks](https://dataorientedprogramming.wordpress.com/tag/mike-acton/) if you want to know more about it.
+
+So let's start by [a bit of boilerplate and generating points](../part1.md).

@@ -1,0 +1,83 @@
+---
+title: "Choosing a language to replace Javascript (and why it's F#)"
+description: ""
+author: "theor"
+type: "post"
+pubDate: 2021-03-07T11:44:02-05:00
+tags: ["fsharp", "elm", "js"]
+---
+
+_This is an opinion piece. YMMV_
+
+Once in a while, I start a side project whose ideal format is a website. This article is about how I eventually settled on F# and [Fable](https://fable.io/).
+
+{/*more*/}
+
+I have a strong dislike for weakly typed languages. I've always thought that typing should be a compiler problem. If you're paying people to write unit tests to do a compiler's job, you're wasting time and money. At work, I code in C#, a perfectly reasonable language full of quality-of-life features; I could not convince myself to use JS. I'm also reluctant to use an overcomplicated build pipeline.
+
+My requirements are quite simple:
+
+- I want to build static web sites with no back-end or a minimal one, which is why this post will focus on the front-end
+- They usually have quite a bit of logic. The two projects I did recently are a networked dice roller for my Zoom-based TTRPG sessions and a graph editor that renders as text
+- They usually have dependencies on external libs: [socket.io](https://socket.io/), [Tone.js](https://tonejs.github.io/), ... so interop is a must
+- On the UI side, I have a strong preference for [Model-View-Update](https://elmprogramming.com/model-view-update-part-1.html) architectures
+
+I first started by listing candidate stacks I could use:
+
+- [Typescript](https://www.typescriptlang.org/) is a language surprisingly good at wrapping JS and making it reasonable
+- [Elm](https://elm-lang.org/) is the first MVU stack I've tried
+- [Fable](https://fable.io/) is an F#-to-JS transpiler
+
+I'm also following [Blazor](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor) closely, but it seems to be a bit early to use it. The WebAssembly build size is huge, as it needs to ship an entire .net VM. I'll probably revisit this option once [WebAssembly AOT](https://visualstudiomagazine.com/articles/2020/05/22/blazor-future.aspx) lands.
+
+I had a look at [ReScript](https://rescript-lang.org/), which is another transpiler, but the renaming/merging of BuckleScript/Reason was still ongoing and the doc was messy.
+
+## Typescript
+
+TS is gaining quite a lot of traction, and that's justified: the tooling is great, the language allows progressive migrations of a JS codebase to TS, and its type system is designed to handle idiomatic JS, however crazy that sounds. More and more JS libs are now written in TS (that's the case of Tone.JS for example), and it supports untyped code via its `any` type as an escape hatch.
+
+The typical MVU implementation in JS/TS is [React+Redux](https://redux.js.org/). I am still surprised how inelegant Redux becomes with typescript there are [way](https://github.com/piotrwitek/typesafe-actions#typesafe-actions) [too](https://redux-toolkit.js.org/usage/usage-with-typescript#createaction) [many](https://redux-toolkit.js.org/usage/usage-with-typescript#alternative-to-using-a-literally-typed-actiontype) ways to create Redux actions, when it should simply be the outcome of the framework relying on a sound type system.
+
+I'm still confused by the fact that, by default, TS can output JS even if you have compiler errors.
+
+Also, way too much webpack/babel magic. This one is not against TS, but for some reason, I find it _arcane_.
+
+My conclusion is "it works, I don't like it". I see TS as what JS should have been: a common target for better ecosystems, but with a reasonable type system.
+
+## Elm
+
+I'm a big fan of functional programming, OCaml being the first language I've learned. Elm has a syntax that looks like a simpler haskell, it is pure, and has amazing tooling. However:
+
+- Its purity, while something I endorse on paper, is an issue as I need external libraries like Tone.js. It means all side-effects must happen _outside_ of Elm, so I need either to write JS or to use _another_ tech to write that side-effect code. I had a prototype using Elm and TS: there's even a few useful tools to ease that like [elm-typescript-interop](https://github.com/dillonkearns/elm-typescript-interop)... which means going back to TS in addition to elm.
+- The language designer is [voluntarily preventing anyone except himself](https://discourse.elm-lang.org/t/native-code-in-0-19/826) to write elm modules in JS. Hubris aside, that's definitely an issue for my exploratory side projects that won't ever reach production in most cases.
+- The IDE experience is _alright_ - however, I spend my days in [Rider](https://www.jetbrains.com/rider/), so I do have high expectations.
+
+On the other hand, the compiler messages are fantastic - I think Elm influenced Rust more recently, which has the best errors I've ever seen. Also, the [Elm Architecture Guide](https://guide.elm-lang.org/architecture/) is a fantastic intro to the MVU pattern and excellent documentation in general.
+
+## F#/Fable
+
+I've used F# multiple times in the past in a bunch of projects I should write about one day - a toy compiler for a ML-like language emitting IL, a simple Amazon S3 backed dropbox-like, etc. F# fixes most issues I have with OCaml (syntax, tooling, ecosystem) at the cost of a few powerful features I've never used.
+
+Fable takes F# code and outputs JS - meaning, unlike the current Blazor WASM implementation, it doesn't rely on running a full mono VM in the browser to interpret IL. It's faster, but that means Fable needs to implement the base layer of .net in JS; it hasn't been an issue to date for me.
+
+The tooling (especially since [Fable 3 Nagareyama](https://fable.io/blog/Announcing-Nagareyama-1.html)) is great - a getting started guide comes down to `dotnet tool install fable && dotnet fable src`. It's reasonably fast and doesn't force the user to use webpack or parcel or any of those overcomplicated build systems. The IDE experience, in Rider or VSCode+[Ionide](https://ionide.io/), is good. It could be better, but I still prefer it to the elm experience.
+
+Interop (see the [fable doc section](https://fable.io/docs/communicate/js-from-fable.html)) can be done multiple ways:
+
+- declaring an F# interface for the module you import is _elegant_
+- these interfaces can be generated semi-automatically from typescript using [ts2fable](https://github.com/fable-compiler/ts2fable)
+- for simple cases, `[<Emit("raw js code")>]` can do the job
+- worst case, I _could_ also fall back on TS using a simple DIY protocol - elm's [ports](https://guide.elm-lang.org/interop/ports.html) are really rigid for that.
+
+It does mean that you can trigger those _disgusting_ side-effects straight from Fable code, which is alright in my case - great for prototyping, and I tend to eventually refactor those using some kind of Command/Effect pattern.
+
+I did find a few issues with that pipeline, but nothing that annoying to me or that I found _straight-up disgusting_:
+
+- the fable compiler in watch mode is sometimes confused by changes to the `fsproj` file - I now restart it whenever I add/move a file
+- [Fable.Elmish](https://elmish.github.io/elmish/) is fantastic, but I did stumble upon a few weird rendering cases - I need to find a proper repro to report a bug.
+
+## Fable it is
+
+One of my most recent side-projects was a networked dice roller for my remote table-top sessions (Roll20 does way too much for my use case... and it was a perfect test case). I wrote it both with Elm and Fable: both are quite similar in terms of LoC. Refactoring the network flow (host/join a room, dispatch messages, etc) was way simpler in F# in the end, as the entire code section was typed instead of relying on JS code to use socket.io in the case of Elm.
+
+I'm now using Fable to write a graph editor with a textual renderer. At work, I spend a lot of time drawing graphs in the comments of my unit tests (more on that later) and I'm still very happy with the entire pipeline. I like the iteration speed, type safety, UI code. And given how picky I can be with my tech stacks, that's a lot.

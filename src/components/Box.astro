@@ -1,0 +1,11 @@
+---
+    interface Props {
+  children: any
+} 
+const {children} = Astro.props;
+// replace src={import("./([^")}]*") by src={import("./$1)}
+---
+
+  <div class="blog-post-box">
+  <slot />
+  </div>
