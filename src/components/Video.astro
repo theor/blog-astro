@@ -1,15 +1,21 @@
 ---
-    interface Props {
-  src: string
-  caption: string
-  height: string | number
-} 
-const {src, height, caption} = Astro.props;
+interface Props {
+  src: string;
+  caption: string;
+  height: string | number;
+}
+const { src, height, caption } = Astro.props;
 const src2 = await src;
 // replace src={import("./([^")}]*") by src={import("./$1)}
 ---
 
-  <div class="blog-post-video" style={{ height: height ?? "250px" }}>
-    <video src={src2.default} autoPlay muted controls loop style={{ height: "100%" }} />
-    {caption && <span>{caption}</span>}
-  </div>
+<div class="blog-post-video" style={{ height: height ?? "250px" }}>
+  <video
+    src={src2.default}
+    autoPlay
+    muted
+    controls
+    loop
+    style={{ height: "100%" }}></video>
+  {caption && <span>{caption}</span>}
+</div>

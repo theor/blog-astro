@@ -442,6 +442,7 @@ for (var index = 0; index < renderedItemCount.Length; index++)
 ```
 
 And that's it. Culling demo:
+
 <Video src={import("./cullingdemo.mp4")} />
 
 # Performance
@@ -462,7 +463,7 @@ In no specific order:
 - Belt update:
   - In real-world conditions, it would need to be batched and/or time sliced. Updating half of the distant belts but at twice the rate could work. Lots of edge cases.
   - Too many `jobhandle.Complete()` in the actual code. Look at that:
-  ![At least it's packed, 2M items](Profiler.png)
+    ![At least it's packed, 2M items](Profiler.png)
 - Data representation:
   - In Satisfactory, belts are probably stored as bezier curves
   - Implementing Factorio's two-lane belts with random merge points would take a lot more effort, especially given how well the game runs

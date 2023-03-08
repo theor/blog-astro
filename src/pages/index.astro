@@ -11,69 +11,65 @@ import { findImage, isVideo } from "../utils";
 // 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 // );
 let posts = await Promise.all(
-	(
-		await getCollection("blog", (x) => !x.data.draft)
-	)
-		.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-		.map(async (x) => {
-			const b = x.data.banner
-				? await findImage(`${x.slug}/${x.data.banner}`).catch()
-				: null;
-			return { banner: b, ...x };
-		})
+  (
+    await getCollection("blog", (x) => !x.data.draft)
+  )
+    .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+    .map(async (x) => {
+      const b = x.data.banner
+        ? await findImage(`${x.slug}/${x.data.banner}`).catch()
+        : null;
+      return { banner: b, ...x };
+    })
 );
 ---
 
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-		<style>
-			ul {
-				list-style-type: none;
-				padding: unset;
-			}
-			ul li {
-				display: flex;
-			}
-			ul li :global(time) {
-				flex: 0 0 130px;
-				font-style: italic;
-				color: #595959;
-			}
-			ul li a:visited {
-				color: #8e32dc;
-			}
-		</style>
-	</head>
-	<body>
-		<Header />
-		<main>
-			<section>
-				{
-					posts.map((post) => {
-						return (
-							<div class="post-preview">
-								<a href={`/${post.slug}/`}>
-									{post.data.banner &&
-										(!isVideo(post.data.banner) ? (
-											<img src={post.banner} />
-										) : (
-											<video
-												loop
-												autoplay
-												src={post.banner}
-											/>
-										))}
-									<FormattedDate date={post.data.pubDate} />
-									<h1>{post.data.title}</h1>
-								</a>
-							</div>
-						);
-					})
-				}
-			</section>
-		</main>
-		<Footer />
-	</body>
+  <head>
+    <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+    <style>
+      ul {
+        list-style-type: none;
+        padding: unset;
+      }
+      ul li {
+        display: flex;
+      }
+      ul li :global(time) {
+        flex: 0 0 130px;
+        font-style: italic;
+        color: #595959;
+      }
+      ul li a:visited {
+        color: #8e32dc;
+      }
+    </style>
+  </head>
+  <body>
+    <Header />
+    <main>
+      <section>
+        {
+          posts.map((post) => {
+            return (
+              <div class="post-preview">
+                <a href={`/${post.slug}/`}>
+                  {post.data.banner &&
+                    (!isVideo(post.data.banner) ? (
+                      <img src={post.banner} />
+                    ) : (
+                      <video loop autoplay src={post.banner} />
+                    ))}
+                  <FormattedDate date={post.data.pubDate} />
+                  <h1>{post.data.title}</h1>
+                </a>
+              </div>
+            );
+          })
+        }
+      </section>
+    </main>
+    <Footer />
+  </body>
 </html>
