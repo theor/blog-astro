@@ -32,6 +32,7 @@ let posts = await Promise.all(
         <style lang="scss">
             [astro-icon] {
                 width: 1rem;
+                margin-right: var(--spacing-1);
             }
             ul {
                 list-style-type: none;
@@ -81,6 +82,7 @@ let posts = await Promise.all(
                 * {
                 color: var(--color-text-light);
                 }
+                span.sep { margin: 0 var(--spacing-1) 0 var(--spacing-2);}
             }
         </style>
     </head>
@@ -112,7 +114,8 @@ let posts = await Promise.all(
                                 <div class="metadata">
 <Icon name="mdi:calendar" />
                                 <FormattedDate date={post.data.pubDate} />
-                                {post.data.tags && (<> | </><Icon name="mdi:tags" viewBox="-3 -3 25 25" />)}
+                                {(<span class="sep"> | </span><Icon name="mdi:clock" viewBox="-3 -3 25 25" />)}{post.rendered.remarkPluginFrontmatter.timeToRead}
+                                {post.data.tags && (<span class="sep"> | </span><Icon name="mdi:tags" viewBox="-3 -3 25 25" />)}
                                 {post.data.tags &&
                                     post.data.tags.map((x) => (
                                         <a class="tag">{x}</a>

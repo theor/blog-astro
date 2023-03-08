@@ -23,12 +23,14 @@ export function autoAbstract(): RemarkPlugin {
     return function (tree: Root, file: VFile): void {
         console.warn("  autoAbstract")
         const { frontmatter } = file.data.astro;
+        let timeToRead = Math.max(1, Math.round(toString(tree).split(/[ \n]/).length / 265));
         let excerpt = "";
         // cloneTreeUntil(tree as Parent&Literal, x => { console.log(x); return false});
         visit(tree, { type: 'paragraph' }, node => {
             excerpt += fixPonctuation(toString(node));
             return excerpt.length >= 100 ? EXIT : CONTINUE;
         });
+        frontmatter.timeToRead = timeToRead + " min";
         frontmatter.abstract = excerpt;
         // visit(tree, { type: 'mdxJsxFlowElement', name: 'Abstract' }, node => {
         //     const normalised = fixPonctuation(toString(node));
