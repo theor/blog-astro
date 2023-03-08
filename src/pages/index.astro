@@ -28,7 +28,7 @@ let posts = await Promise.all(
 <html lang="en">
   <head>
     <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-    <style>
+    <style lang="scss">
       ul {
         list-style-type: none;
         padding: unset;
@@ -43,6 +43,12 @@ let posts = await Promise.all(
       }
       ul li a:visited {
         color: #8e32dc;
+      }
+
+      .post-preview {
+        .tag {
+            margin-right: var(--spacing-1);
+        }
       }
     </style>
   </head>
@@ -62,8 +68,12 @@ let posts = await Promise.all(
                       <video loop autoplay src={post.banner} />
                     ))}
                   <FormattedDate date={post.data.pubDate} />
+                  {post.data.tags && <span>tags</span>}
+                    {post.data.tags && post.data.tags.map(x => <a class="tag">{x}</a>)}
+                  
                   <h1>{post.data.title}</h1>
                 </a>
+                {post.data.abstract}
               </div>
             );
           })

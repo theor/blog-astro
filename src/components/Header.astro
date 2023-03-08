@@ -1,13 +1,15 @@
 ---
 import HeaderLink from "./HeaderLink.astro";
-import { SITE_TITLE } from "../consts";
+import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 ---
 
 <header>
-  <h2>
-    <img src="/profile-pic.png" />
-    {SITE_TITLE}
-  </h2>
+    <div class="title">
+        <img src="/profile-pic.png" />
+        <h1>
+          {SITE_TITLE}
+        </h1>
+        <span>{SITE_DESCRIPTION}</span>
   <nav>
     <HeaderLink href="/">Home</HeaderLink>
     <HeaderLink href="/about">About</HeaderLink>
@@ -16,12 +18,32 @@ import { SITE_TITLE } from "../consts";
       GitHub
     </HeaderLink>
   </nav>
+</div>
 </header>
-<style>
+<style lang="scss">
   header {
+    font-family: Montserrat, sans-serif;
     margin: 0em 0 2em;
-  }
-  h2 {
-    margin: 0.5em 0;
-  }
+    nav {
+        margin: 1em 1em 1em 0.5em;
+    }
+    .title {
+        display:flex;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    h1 { 
+        margin: 0;
+    }
+    span {
+        margin: 15px;
+
+        font-size: 1.2em;
+        align-self: end;
+    }
+    img {
+        width: 64px;
+        height: 64px;
+    }
+}
 </style>
