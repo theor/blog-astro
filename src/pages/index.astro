@@ -5,10 +5,17 @@ import Footer from '../components/Footer.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 import { getCollection } from 'astro:content';
 import FormattedDate from '../components/FormattedDate.astro';
+import { findImage, isVideo } from '../utils';
 
-const posts = (await getCollection('blog', x => !x.data.draft)).sort(
+// const posts =  (await getCollection('blog', x => !x.data.draft)).sort(
+// 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+// );
+let posts = await Promise.all((await getCollection('blog', x => !x.data.draft)).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
-);
+).map(async x =>  {
+	const b = x.data.banner ? await  findImage(`${x.slug}/${x.data.banner}`).catch() : null;
+	return {banner: b, ...x}
+	}));
 ---
 
 <!DOCTYPE html>
@@ -37,16 +44,20 @@ const posts = (await getCollection('blog', x => !x.data.draft)).sort(
 		<Header />
 		<main>
 			<section>
-				<ul>
 					{
-						posts.map((post) => (
-							<li>
+						posts.map((post) => {
+							
+							 return (
+							<div class="post-preview">
+							<a href={`/${post.slug}/`}>
+							{post.data.banner && (!isVideo(post.data.banner) ? <img src={post.banner}/> : <video loop autoplay src={post.banner}/>)}	
 								<FormattedDate date={post.data.pubDate} />
-								<a href={`/blog/${post.slug}/`}>{post.data.title}</a>
-							</li>
-						))
+								<h1>{post.data.title}</h1>
+								{JSON.stringify(post)}
+								</a>
+							</div>
+						); })
 					}
-				</ul>
 			</section>
 		</main>
 		<Footer />
