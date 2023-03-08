@@ -2,7 +2,7 @@
 const load = async function () {
     let images: Record<string, () => Promise<unknown>> | undefined = undefined;
       images = import.meta.glob(['./content/blog/**/**.*','!**.mdx','!**.md_']);
-      console.log("all", images);
+      // console.log("all", images);
    
     return images;
   };
@@ -25,7 +25,7 @@ const load = async function () {
     // }
   
     const images = await fetchLocalImages();
-    console.log("find ", imagePath)
+    // console.log("find ", imagePath)
     const key = `./content/blog/${imagePath}`;//.replace('~/', '/src/');
   return typeof images[key] === 'function' ? (await images[key]())['default'] : null;
   };

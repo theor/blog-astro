@@ -1,21 +1,27 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
-import { getCollection } from 'astro:content';
-import FormattedDate from '../components/FormattedDate.astro';
-import { findImage, isVideo } from '../utils';
+import BaseHead from "../components/BaseHead.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
+import { getCollection } from "astro:content";
+import FormattedDate from "../components/FormattedDate.astro";
+import { findImage, isVideo } from "../utils";
 
 // const posts =  (await getCollection('blog', x => !x.data.draft)).sort(
 // 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 // );
-let posts = await Promise.all((await getCollection('blog', x => !x.data.draft)).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
-).map(async x =>  {
-	const b = x.data.banner ? await  findImage(`${x.slug}/${x.data.banner}`).catch() : null;
-	return {banner: b, ...x}
-	}));
+let posts = await Promise.all(
+	(
+		await getCollection("blog", (x) => !x.data.draft)
+	)
+		.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+		.map(async (x) => {
+			const b = x.data.banner
+				? await findImage(`${x.slug}/${x.data.banner}`).catch()
+				: null;
+			return { banner: b, ...x };
+		})
+);
 ---
 
 <!DOCTYPE html>
@@ -44,20 +50,28 @@ let posts = await Promise.all((await getCollection('blog', x => !x.data.draft)).
 		<Header />
 		<main>
 			<section>
-					{
-						posts.map((post) => {
-							
-							 return (
+				{
+					posts.map((post) => {
+						return (
 							<div class="post-preview">
-							<a href={`/${post.slug}/`}>
-							{post.data.banner && (!isVideo(post.data.banner) ? <img src={post.banner}/> : <video loop autoplay src={post.banner}/>)}	
-								<FormattedDate date={post.data.pubDate} />
-								<h1>{post.data.title}</h1>
-								{JSON.stringify(post)}
+								<a href={`/${post.slug}/`}>
+									{post.data.banner &&
+										(!isVideo(post.data.banner) ? (
+											<img src={post.banner} />
+										) : (
+											<video
+												loop
+												autoplay
+												src={post.banner}
+											/>
+										))}
+									<FormattedDate date={post.data.pubDate} />
+									<h1>{post.data.title}</h1>
 								</a>
 							</div>
-						); })
-					}
+						);
+					})
+				}
 			</section>
 		</main>
 		<Footer />

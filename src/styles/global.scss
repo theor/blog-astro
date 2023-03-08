@@ -1,0 +1,168 @@
+/*
+  The CSS in this style tag is based off of Bear Blog's default CSS.
+  https://github.com/HermanMartinus/bearblog/blob/297026a877bc2ab2b3bdfbd6b9f7961c350917dd/templates/styles/blog/default.css
+  License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
+ */
+ @import "../../node_modules/fontsource-montserrat/index.css";
+ @import "../../node_modules/fontsource-merriweather/index.css";
+:root {
+     --color-primary: #005b99;
+     --color-primary-light: #d4eeff;
+     --color-text: #000000;
+     --color-text-light: #4f5969;
+     --color-heading: #1a202c;
+     --color-heading-black: black;
+     --color-accent: #d1dce5;
+     --spacing-px: "1px";
+     --spacing-0: 0;
+     --spacing-1: 0.25rem;
+     --spacing-2: 0.5rem;
+     --spacing-3: 0.75rem;
+     --spacing-4: 1rem;
+     --spacing-5: 1.25rem;
+     --spacing-6: 1.5rem;
+     --spacing-8: 2rem;
+     --spacing-10: 2.5rem;
+     --spacing-12: 3rem;
+     --spacing-16: 4rem;
+     --spacing-20: 5rem;
+     --spacing-24: 6rem;
+     --spacing-32: 8rem;
+     --lineheight-none: 1;
+     --lineheight-tight: 1.1;
+     --lineheight-normal: 1.5;
+     --lineheight-relaxed: 1.625;
+ }
+ body {
+     font-family: Merriweather, sans-serif;
+     margin: auto;
+     padding: 20px;
+     max-width: 65ch;
+     text-align: left;
+     background-color: #fff;
+     word-wrap: break-word;
+     overflow-wrap: break-word;
+     line-height: 1.5;
+     color: #444;
+ }
+ h1 {
+     font-family: Montserrat, sans-serif;
+     color: #222;
+ }
+ h2 {
+     font-family: Montserrat, sans-serif;
+     color: #222;
+ }
+ h3 {
+     font-family: Montserrat, sans-serif;
+     color: #222;
+ }
+ h4 {
+     font-family: Montserrat, sans-serif;
+     color: #222;
+ }
+ h5 {
+     font-family: Montserrat, sans-serif;
+     color: #222;
+ }
+ h6 {
+     font-family: Montserrat, sans-serif;
+     color: #222;
+ }
+ strong {
+     color: #222;
+ }
+ b {
+     color: #222;
+ }
+ a {
+     color: #3273dc;
+ }
+ nav {
+     a {
+         margin-right: 10px;
+     }
+ }
+ textarea {
+     width: 100%;
+     font-size: 16px;
+ }
+ input {
+     font-size: 16px;
+ }
+ content {
+     line-height: 1.6;
+ }
+ table {
+     width: 100%;
+     margin: var(--spacing-0) var(--spacing-0) var(--spacing-8) var(--spacing-0);
+     thead {
+         * {
+             border-bottom: solid 1px #999;
+         }
+     }
+ }
+ img {
+     max-width: 100%;
+     height: auto;
+ }
+ code {
+     padding: 2px 5px;
+     background-color: #f2f2f2;
+ }
+ pre {
+     padding: 1rem;
+     margin: var(--spacing-0) var(--spacing-0) var(--spacing-8) var(--spacing-0);
+     >code {
+         all: unset;
+     }
+ }
+ blockquote {
+     border: solid black #999;
+     color: #222;
+     padding: 2px 0px 2px 20px;
+     margin: 0px;
+     font-style: italic;
+ }
+ p {
+     line-height: var(--lineHeight-relaxed);
+     --baseline-multiplier: 0.179;
+     --x-height-multiplier: 0.35;
+     margin: var(--spacing-0) var(--spacing-0) var(--spacing-8) var(--spacing-0);
+     padding: var(--spacing-0);
+ }
+
+ .blog-post-video {
+     margin: var(--spacing-0) var(--spacing-0) var(--spacing-8) var(--spacing-0);
+ }
+ .blog-post-box {
+     p {
+         margin: unset;
+     }
+     margin: var(--spacing-0) var(--spacing-0) var(--spacing-8) var(--spacing-0);
+     padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-8);
+     border-left: solid 8px #005b99;
+     background-color: var(--color-primary-light);
+ }
+ .post-preview {
+    margin-bottom: var(--spacing-8);
+     h1 {
+         margin: unset;
+     }
+     a {
+         text-decoration: none;
+     }
+     img {
+         width: 100%;
+         height: 100px;
+         object-fit: cover;
+         object-position: center;
+     }
+ }
+ video {
+     width: 100%;
+     height: 100px;
+     object-fit: cover;
+     object-position: center;
+ }
+ 

@@ -18,5 +18,10 @@
     "astro-m2dx": "^0.7.15",
     "fontsource-merriweather": "^4.0.0",
     "fontsource-montserrat": "^4.0.0"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.4",
+    "prettier-plugin-astro": "^0.8.0",
+    "sass": "^1.58.3"
   }
 }
