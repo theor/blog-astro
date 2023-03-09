@@ -1,0 +1,18 @@
+---
+import Layout from "../layouts/BlogPost.astro";
+import { CollectionEntry, getCollection } from "astro:content";
+
+const allPosts = await getCollection("blog", (x) => !x.data.draft);
+const uniqueTags = [...new Set(allPosts.map((post) => post.data.tags).flat())];
+var tagToPosts =  [...uniqueTags.map(t => [t, allPosts.filter(p => p.data.tags?.includes(t)).map(p => [p.slug, p.data.title])])];
+---
+
+<Layout
+  title="Tags"
+>
+  <ul>
+    {tagToPosts.map(t => t[0] && (<li><a href={`/tags/${t[0]}`}>{t[0]}</a> 
+    {t[1].map(p => <a href={`/${p[0]}`}>{p[1]}</a>)}
+</li>))}
+  </ul>
+</Layout>

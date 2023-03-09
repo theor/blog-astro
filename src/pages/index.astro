@@ -55,6 +55,7 @@ let posts = await Promise.all(
                     margin-right: var(--spacing-1);
                 }
                 a.abstract {
+                    text-decoration: none;
                     color: inherit;
                 }
                 margin-bottom: var(--spacing-8);
@@ -62,7 +63,6 @@ let posts = await Promise.all(
                     margin: unset;
                 }
                 a {
-                    text-decoration: none;
                 }
                 img {
                     width: 100%;
@@ -118,7 +118,7 @@ let posts = await Promise.all(
                                 {post.data.tags && (<span class="sep"> | </span><Icon name="mdi:tags" viewBox="-3 -3 25 25" />)}
                                 {post.data.tags &&
                                     post.data.tags.map((x) => (
-                                        <a class="tag">{x}</a>
+                                        <a class="tag" href={`/tags/${x}`}>{x}</a>
                                     ))}
                                 </div>
                                 <a class="abstract" href={`/${post.slug}/`}>
