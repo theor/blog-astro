@@ -79,10 +79,16 @@ let posts = await Promise.all(
             }
             .metadata {
                 display:flex;
+                flex-wrap: wrap;
                 * {
                 color: var(--color-text-light);
                 }
                 span.sep { margin: 0 var(--spacing-1) 0 var(--spacing-2);}
+				margin-bottom: var(--spacing-2);
+
+				.tag {
+					margin-right: var(--spacing-2);
+				}
             }
         </style>
     </head>
@@ -99,7 +105,6 @@ let posts = await Promise.all(
                                         {post.data.title}
                                     </a>
                                 </h1>
-                                <a href={`/${post.slug}/`} aria-label={post.data.title}>
                                     {post.data.banner &&
                                         (!isVideo(post.data.banner) ? (
                                             <img src={post.banner} alt={post.data.title}/>
@@ -110,7 +115,6 @@ let posts = await Promise.all(
                                                 src={post.banner}
                                             />
                                         ))}
-                                </a>
                                 <div class="metadata">
 <Icon name="mdi:calendar" />
                                 <FormattedDate date={post.data.pubDate} />
