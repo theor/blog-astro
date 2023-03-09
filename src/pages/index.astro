@@ -102,7 +102,7 @@ let posts = await Promise.all(
                                 <a href={`/${post.slug}/`} aria-label={post.data.title}>
                                     {post.data.banner &&
                                         (!isVideo(post.data.banner) ? (
-                                            <img src={post.banner} />
+                                            <img src={post.banner} alt={post.data.title}/>
                                         ) : (
                                             <video
                                                 loop
