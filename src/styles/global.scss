@@ -147,3 +147,25 @@ p {
 hr {
     border: 1px dotted var(--color-accent);
 }
+a[data-link] {
+  padding-right: 4px;
+    margin-left: -16px;
+}
+a[data-link]::before {
+  content: "\00A7";
+  visibility: hidden;
+}
+a[data-link] {
+    // visibility: hidden;
+
+}
+
+*:hover > a[data-link]::before {
+    visibility: visible;
+
+}
+
+// span.icon-link::before {
+//   width: 20px;
+//   content: "asdasd";
+// }
