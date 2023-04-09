@@ -49,3 +49,20 @@ import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
     }
 }
 </style>
+<script>
+  const v = document.querySelector("header .title video")!;
+  let intervalRewind;
+  v.addEventListener("mouseout", e => {
+    clearInterval(intervalRewind);
+    v.play();
+   });
+  v.addEventListener("mouseover", e => {
+    intervalRewind = setInterval(function(){
+       v.pause();
+       v.currentTime -= 0.1
+       if(v.currentTime == 0){
+           clearInterval(intervalRewind);
+       }
+   },25);
+  });
+</script>
