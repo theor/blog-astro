@@ -5,7 +5,9 @@ import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
 
 <header>
     <div class="title">
-        <img src="/profile-pic.png" alt="logo" />
+      <video autoplay muted poster="/profile-pic.png" preload="metadata" alt="logo">
+        <source src="/out-1.mp4"  type="video/mp4"/>
+        </video>
         <h1>
           {SITE_TITLE}
         </h1>
@@ -41,7 +43,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from "../consts";
         font-size: 1.2em;
         align-self: end;
     }
-    img {
+    img,video {
         width: 64px;
         height: 64px;
     }
