@@ -139,7 +139,7 @@ It is similar to using a pseudorandom generator with a fixed seed, but the Halto
 
 # Today's rabbit hole: 3D rendering and triangulation
 
-Things were too simple at this point, so of course I found something. It all started when I thought "wouldn't it be great if I could preview the stacked laser cut layers in 3D".
+Things were too simple at this point, so, of course, I found something. It all started when I thought, "wouldn't it be great if I could preview the stacked laser cut layers in 3D".
 
 I bootstrapped a simple Bevy app. To render the layers, I need to triangulate them. It happens there's a [triangulate crate](https://crates.io/crates/triangulate), but it comes with constraints.
 
@@ -153,13 +153,13 @@ First, let's look at the DOOM polygons three cases:
 2. one polygon with holes (called "weakly simple polygons" in the most basic case akin to a disc). This means the sector represents multiple polygons where one contains the others
 <img src="./case2.webp" alt="Case 1, a simple polygon" width="30%"/>
 
-3. multiple polygons sharing one vertex - to be accurate multiple polygons where each pair share at most _one_ contiguous vertex, which makes it a _complex_ polygon. the fact that the edges intersections are vertices means the polygon can be split into simple polygons.
+3. multiple polygons sharing one vertex - to be accurate multiple polygons where each pair share at most _one_ contiguous vertex, which makes it a _complex_ polygon. The fact that the edges intersections are vertices means the polygon can be split into simple polygons.
 <img src="./case3.webp" alt="Case 1, a simple polygon" width="30%"/>
 
 
 The `triangulate` crate (and, AFAIK, all other implementations) needs actual paths - an _ordered_ list of vertices. It also does not support non-simple polygons, which excludes case 3.
 
-To rebuild a path from the unordered list of edges, my initial approach was to pick an edge, then find any edge connected to it. this works for cases 1 and 2, but not for the last one, as those polygons have more than two edges meeting at some vertices.
+To rebuild a path from the unordered list of edges, my initial approach was to pick an edge, then find any edge connected to it. This works for cases 1 and 2, but not for the last one, as those polygons have more than two edges meeting at some vertices.
 
 <Video width="10" noloop src={import("./badtris.mp4")}/>
 
@@ -168,7 +168,7 @@ The solution to that problem is to rebuild paths by repeatedly finding the short
 <Video noloop  src={import("./goodtris.mp4")}/>
 
 If a doom sector contains multiple loops, it means it falls either in case 2 or 3. To figure it out, we can rely on empiric assumptions :
-- case 2 and 3 are exclusive - meaning if a vertex is shared, it must not be a hole. only I'm not _sure_ this is true
+- Cases 2 and 3 are exclusive - meaning if a vertex is shared, it must not be a hole. only I'm not _sure_ this is true
 - it also means that if a loop contains another, it is the outer loop of a polygon with holes
 
 I went with the latter, using the [geo rust crate](https://crates.io/crates/geo) which has extensive support for polygon operations.
@@ -181,11 +181,11 @@ The issue is that I now need to invert those polygons, as I want to subtract the
 
 ## Subsector attempt
 
-But wait, the WAD does contain simple, convex polygons, right ? The result of the binary space partitioning. It does, but those polygons sometimes have _implicit_ edges defined by the partition lines. I started working on that, then realized that was too much side-tracking. It should work however. Maybe later...
+But wait, the WAD does contain simple, convex polygons, right ? The result of the binary space partitioning. It does, but those polygons sometimes have _implicit_ edges defined by the partition lines. I started working on that, then realized that was too much sidetracking. It should work however. Maybe later...
 
 ## Backtracking
 
-I gave up on that approach at this point. The actual solution to the preview, a very valid problem, was simpler: use [TinkerCad](https://www.tinkercad.com/) to import the svg layers, extrude them, stack them export a .glb I could render in blender. That's how I rendered the banner of this article. Note that tinkercad's SVG import do expect actual SVG paths and not disjoint lines ; so part of that work did serve to produce a cute render.
+I gave up on that approach at this point. The solution to the preview, a very valid problem, was simpler: use [TinkerCad](https://www.tinkercad.com/) to import the svg layers, extrude them, stack them export a .glb I could render in blender. That's how I rendered the banner of this article. Note that tinkercad's SVG import do expect proper SVG paths and not disjoint lines ; so part of that work did serve to produce a cute render.
 
 ![Blender render of E1M1](./doom-render.png)
 ![Blender render of E1M2](./doom-render3.webp)
