@@ -97,25 +97,28 @@ Things were too simple at this point, so of course I found something. It all sta
 I bootstrapped a simple Bevy app. To render the layers, I need to triangulate them. It happens there's a [triangulate crate](https://crates.io/crates/triangulate), but it comes with constraints.
 
 First, let's look at the DOOM polygons three cases:
-```
-THREE CASES
-```
+
 1. a _simple_ polygon, which has a specific definition ([Wikipedia](https://en.wikipedia.org/wiki/Simple_polygon)) :
     - exactly two edges meet at each vertex
     - the number of edges equals the number of vertices
-There is two other cases:
+<img src="./case1.webp" alt="Case 1, a simple polygon" width="30%"/>
+
 2. one polygon with holes (called "weakly simple polygons" in the most basic case akin to a disc). This means the sector represents multiple polygons where one contains the others
+<img src="./case2.webp" alt="Case 1, a simple polygon" width="30%"/>
+
 3. multiple polygons sharing one vertex - to be accurate multiple polygons where each pair share at most _one_ contiguous vertex, which makes it a _complex_ polygon. the fact that the edges intersections are vertices means the polygon can be split into simple polygons.
+<img src="./case3.webp" alt="Case 1, a simple polygon" width="30%"/>
+
 
 The `triangulate` crate (and, AFAIK, all other implementations) needs actual paths - an _ordered_ list of vertices. It also does not support non-simple polygons, which excludes case 3.
 
 To rebuild a path from the unordered list of edges, my initial approach was to pick an edge, then find any edge connected to it. this works for cases 1 and 2, but not for the last one, as those polygons have more than two edges meeting at some vertices.
 
+<Video width="10" noloop src={import("./badtris.mp4")}/>
+
 The solution to that problem is to rebuild paths by repeatedly finding the shortest loop from an edge, which is equivalent to finding all loops where no vertex is used more than once per loop:
 
-```
-SLOOP
-```
+<Video noloop  src={import("./goodtris.mp4")}/>
 
 If a doom sector contains multiple loops, it means it falls either in case 2 or 3. To figure it out, we can rely on empiric assumptions :
 - case 2 and 3 are exclusive - meaning if a vertex is shared, it must not be a hole. only I'm not _sure_ this is true

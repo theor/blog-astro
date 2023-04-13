@@ -4,19 +4,25 @@ interface Props {
   caption: string;
   width: string | number;
   height: string | number;
+  noloop: boolean;
+  nocontrols: boolean;
 }
-const { src, width, height, caption } = Astro.props;
+const { src, width, height, caption, noloop, nocontrols } = Astro.props;
 const src2 = await src;
 // replace src={import("./([^")}]*") by src={import("./$1)}
 ---
 
-<div class="blog-post-video" style={{ height: height ?? "250px", width: width }}>
+<div
+  class="blog-post-video"
+  style={{ height: height ?? "250px", width: width }}
+>
   <video
+    onclick="this.play()"
     src={src2.default}
     autoPlay
     muted
-    controls
-    loop
-    style={{ height: "100%", width:"100%" }}></video>
+    controls={!nocontrols}
+    loop={!noloop}
+    style={{ height: "100%", width: "100%" }}></video>
   {caption && <span>{caption}</span>}
 </div>
