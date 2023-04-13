@@ -5,9 +5,10 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import { findImage} from "../utils";
-type Props = CollectionEntry<"blog">["data"];
-
-const { title, description, pubDate, updatedDate, heroImage, banner, slug } = Astro.props;
+import BlogPostMetadata from "../components/BlogPostMetadata.astro";
+type Props = CollectionEntry<"blog"> & {remarkPluginFrontmatter: Record<string, any>};
+console.log(Astro.props)
+const { title, description, pubDate, updatedDate, heroImage, banner, slug } = Astro.props.data;
 ---
 
 <html lang="en">
@@ -28,10 +29,6 @@ const { title, description, pubDate, updatedDate, heroImage, banner, slug } = As
       img {
         margin-bottom: 1em;
       }
-
-      .blog-post-video span {
-        font-style: italic;
-      }
     </style>
   </head>
 
@@ -42,14 +39,17 @@ const { title, description, pubDate, updatedDate, heroImage, banner, slug } = As
         {heroImage && <img width={720} height={360} src={heroImage} alt="" />}
         <h1 class="title">{title}</h1>
         {description && <h3>{description}</h3>}
-        {pubDate && <FormattedDate date={pubDate} />}
+        <BlogPostMetadata post={Astro.props}/>
+
+        <!-- {JSON.stringify(Astro.props)} -->
+        <!-- {pubDate && <FormattedDate date={pubDate} />}
         {
           updatedDate && (
             <div class="last-updated-on">
               Last updated on <FormattedDate date={updatedDate} />
             </div>
           )
-        }
+        } -->
         <hr />
         <slot />
       </article>

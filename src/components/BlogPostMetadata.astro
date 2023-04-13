@@ -1,0 +1,59 @@
+---
+import { Icon } from "astro-icon";
+import type { CollectionEntry } from "astro:content";
+import FormattedDate from "../components/FormattedDate.astro";
+type Props = CollectionEntry<"blog">;
+const { post } = Astro.props;
+console.log(Astro.props)
+---
+
+<style lang="scss">
+    .metadata {
+            [astro-icon] {
+                width: 1rem;
+                margin-right: var(--spacing-1);
+            }
+        display: flex;
+        flex-wrap: wrap;
+        margin-bottom: var(--spacing-2);
+        * {
+            color: var(--color-text-light);
+        }
+        span.sep {
+            margin: 0 var(--spacing-1) 0 var(--spacing-2);
+        }
+
+        .tag {
+            margin-right: var(--spacing-2);
+                    margin-right: var(--spacing-1);
+                }
+    }
+</style>
+<div class="metadata">
+    <Icon name="mdi:calendar" />
+    <FormattedDate date={post.data.pubDate} />
+    {
+        (
+            <>
+                <span class="sep"> | </span>
+                <Icon name="mdi:clock" viewBox="-3 -3 25 25" />
+            </>
+        )
+    }{post.remarkPluginFrontmatter.timeToRead}
+    {
+        post.data.tags && (
+            <>
+                <span class="sep"> | </span>
+                <Icon name="mdi:tags" viewBox="-3 -3 25 25" />
+            </>
+        )
+    }
+    {
+        post.data.tags &&
+            post.data.tags.map((x) => (
+                <a class="tag" href={`/tags/${x}`}>
+                    {x}
+                </a>
+            ))
+    }
+</div>

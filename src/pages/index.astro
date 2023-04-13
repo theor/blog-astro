@@ -4,9 +4,8 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 import { getCollection } from "astro:content";
-import FormattedDate from "../components/FormattedDate.astro";
 import { findImage, isVideo } from "../utils";
-import { Icon } from 'astro-icon'
+import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 // const posts =  (await getCollection('blog', x => !x.data.draft)).sort(
 // 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 // );
@@ -20,7 +19,7 @@ let posts = await Promise.all(
             const b = x.data.banner
                 ? await findImage(`${x.slug}/${x.data.banner}`).catch()
                 : null;
-            return { banner: b, rendered, ...x };
+            return { banner: b, remarkPluginFrontmatter:rendered.remarkPluginFrontmatter, ...x };
         })
 );
 ---
@@ -30,10 +29,6 @@ let posts = await Promise.all(
     <head>
         <BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
         <style lang="scss">
-            [astro-icon] {
-                width: 1rem;
-                margin-right: var(--spacing-1);
-            }
             ul {
                 list-style-type: none;
                 padding: unset;
@@ -51,9 +46,6 @@ let posts = await Promise.all(
             }
 
             .post-preview {
-                .tag {
-                    margin-right: var(--spacing-1);
-                }
                 a.abstract {
                     text-decoration: none;
                     color: inherit;
@@ -76,19 +68,6 @@ let posts = await Promise.all(
                 height: 100px;
                 object-fit: cover;
                 object-position: center;
-            }
-            .metadata {
-                display:flex;
-                flex-wrap: wrap;
-                * {
-                color: var(--color-text-light);
-                }
-                span.sep { margin: 0 var(--spacing-1) 0 var(--spacing-2);}
-				margin-bottom: var(--spacing-2);
-
-				.tag {
-					margin-right: var(--spacing-2);
-				}
             }
         </style>
     </head>
@@ -115,25 +94,12 @@ let posts = await Promise.all(
                                                 src={post.banner}
                                             />
                                         ))}
-                                <div class="metadata">
-<Icon name="mdi:calendar" />
-                                <FormattedDate date={post.data.pubDate} />
-                                {(<span class="sep"> | </span><Icon name="mdi:clock" viewBox="-3 -3 25 25" />)}{post.rendered.remarkPluginFrontmatter.timeToRead}
-                                {post.data.tags && (<span class="sep"> | </span><Icon name="mdi:tags" viewBox="-3 -3 25 25" />)}
-                                {post.data.tags &&
-                                    post.data.tags.map((x) => (
-                                        <a class="tag" href={`/tags/${x}`}>{x}</a>
-                                    ))}
-                                </div>
-                                <a class="abstract" href={`/${post.slug}/`}>
-                                    {
-                                        post.rendered.remarkPluginFrontmatter
-                                            .abstract
-                                    }
-                                    ..
-                                </a>
-                            </div>
-                            // <hr/>
+                                <BlogPostMetadata post={post}/>
+<a class="abstract" href={`/${post.slug}/`}>
+    {post.remarkPluginFrontmatter.abstract}
+    ..
+</a>
+</div> 
                         );
                     })
                 }
