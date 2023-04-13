@@ -1,11 +1,41 @@
 ---
-import Layout from "../layouts/BlogPost.astro";
+import BaseHead from "../components/BaseHead.astro";
+import Header from "../components/Header.astro";
+// import Layout from "../layouts/BlogPost.astro";
+const title = "About me";
 ---
 
-<Layout
-  title="About Me"
->
+<html lang="en">
+  <head>
+    <BaseHead title={title} />
+    <style>
+      .title {
+        font-size: 2em;
+        margin: 0.25em 0 0;
+      }
+      hr {
+        border-top: 1px solid #ddd;
+        margin: 1rem 0;
+      }
+      .last-updated-on {
+        font-style: italic;
+      }
+      img {
+        margin-bottom: 1em;
+      }
+    </style>
+  </head>
+
+  <body>
+    <Header />
+    <main>
+      <article>
+        <h1 class="title">{title}</h1>
+        <hr />
   <p>
     Tools dev, prev. Ubisoft, now Unity. I like to tinker, especially with compilers/interpreters, procedural generation, APIs etc.
   </p>
-</Layout>
+</article>
+</main>
+</body>
+</html>
