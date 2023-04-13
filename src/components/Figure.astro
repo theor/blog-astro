@@ -1,0 +1,22 @@
+---
+interface Props {
+  src: string;
+  alt: string;
+  caption: string;
+}
+const { src,alt,caption, children, ...rest } = Astro.props;
+// replace src={import("./([^")}]*") by src={import("./$1)}
+---
+<style>
+    figure { 
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        margin: 1em;
+         }
+</style>
+<figure class="blog-post-figure" {...rest}>
+    <img src={src} alt={alt || caption}/>
+  {children && <figcaption><slot /></figcaption>}
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
