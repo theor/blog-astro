@@ -1,0 +1,49 @@
+---
+import type { CollectionEntry } from "astro:content";
+import BaseHead from "../components/BaseHead.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import FormattedDate from "../components/FormattedDate.astro";
+import { findImage} from "../utils";
+import BlogPostMetadata from "../components/BlogPostMetadata.astro";
+interface Props {
+    title: string;
+    description?: string;
+}
+// console.log(Astro.props)
+const { title, description } = Astro.props;
+---
+<html lang="en">
+  <head>
+    <BaseHead title={title} description={description} />
+    <style>
+      .title {
+        font-size: 2em;
+        margin: 0.25em 0 0;
+      }
+      hr {
+        border-top: 1px solid #ddd;
+        margin: 1rem 0;
+      }
+      .last-updated-on {
+        font-style: italic;
+      }
+      img {
+        margin-bottom: 1em;
+      }
+    </style>
+  </head>
+
+  <body>
+    <Header />
+    <main>
+      <article>
+        <h1 class="title">{title}</h1>
+        {description && <h3>{description}</h3>}
+        <hr />
+        <slot />
+      </article>
+    </main>
+    <Footer />
+  </body>
+</html>
