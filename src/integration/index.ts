@@ -44,7 +44,7 @@ export function myAstro(): AstroIntegration  {
                 updateConfig({
                     markdown: { remarkPlugins },//, rehypePlugins },
                 });
-                console.log("HOOK", config.markdown.remarkPlugins)
+                // console.log("HOOK", config.markdown.remarkPlugins)
 
                 // isStaticBuild = command === 'build' && config.output === 'static';
 
