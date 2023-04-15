@@ -7,7 +7,8 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "plop":"plop"
   },
   "dependencies": {
     "@astro-community/astro-embed-youtube": "^0.2.2",
@@ -23,6 +24,7 @@
     "rehype-slug": "^5.1.0"
   },
   "devDependencies": {
+    "plop": "^3.1.2",
     "prettier": "^2.8.4",
     "prettier-plugin-astro": "^0.8.0",
     "sass": "^1.58.3"
