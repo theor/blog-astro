@@ -8,7 +8,8 @@ import { findImage} from "../utils";
 import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 type Props = CollectionEntry<"blog"> & {remarkPluginFrontmatter: Record<string, any>};
 // console.log(Astro.props)
-const { title, description, pubDate, updatedDate, heroImage, banner, slug } = Astro.props.data;
+const { title, description, pubDate, updatedDate, heroImage, banner } = Astro.props.data;
+const {slug } = Astro.props;
 ---
 
 <html lang="en">
