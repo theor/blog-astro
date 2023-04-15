@@ -7,14 +7,13 @@ import FormattedDate from "../components/FormattedDate.astro";
 import { findImage} from "../utils";
 import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 type Props = CollectionEntry<"blog"> & {remarkPluginFrontmatter: Record<string, any>};
-// console.log(Astro.props)
 const { title, description, pubDate, updatedDate, heroImage, banner } = Astro.props.data;
-const {slug } = Astro.props;
+const {slug,remarkPluginFrontmatter } = Astro.props;
 ---
 
 <html lang="en">
   <head>
-    <BaseHead title={title} description={description} image={await findImage(slug + "/" + banner)} />
+    <BaseHead title={title} description={remarkPluginFrontmatter?.abstract || description} image={await findImage(slug + "/" + banner)} />
     <style>
       .title {
         font-size: 2em;
