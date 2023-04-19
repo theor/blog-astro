@@ -3,8 +3,9 @@ interface Props {
   src: string;
   alt: string;
   caption: string;
+  width?: string;
 }
-const { src,alt,caption, children, ...rest } = Astro.props;
+const { src,alt,caption, children, width, ...rest } = Astro.props;
 // replace src={import("./([^")}]*") by src={import("./$1)}
 ---
 <style>
@@ -16,7 +17,7 @@ const { src,alt,caption, children, ...rest } = Astro.props;
          }
 </style>
 <figure class="blog-post-figure" {...rest}>
-    <img src={src} alt={alt || caption}/>
+    <img loading="lazy" src={src} alt={alt || caption} width={width}/>
   {children && <figcaption><slot /></figcaption>}
   {caption && <figcaption>{caption}</figcaption>}
 </figure>
