@@ -148,13 +148,13 @@ First, let's look at the DOOM polygons three cases:
 1. a _simple_ polygon, which has a specific definition ([Wikipedia](https://en.wikipedia.org/wiki/Simple_polygon)) :
     - exactly two edges meet at each vertex
     - the number of edges equals the number of vertices
-<img src="./case1.webp" alt="Case 1, a simple polygon" width="30%"/>
+<img loading="lazy" src="./case1.webp" alt="Case 1, a simple polygon" width="30%"/>
 
 2. one polygon with holes (called "weakly simple polygons" in the most basic case akin to a disc). This means the sector represents multiple polygons where one contains the others
-<img src="./case2.webp" alt="Case 1, a simple polygon" width="30%"/>
+<img loading="lazy" src="./case2.webp" alt="Case 1, a simple polygon" width="30%"/>
 
 3. multiple polygons sharing one vertex - to be accurate multiple polygons where each pair share at most _one_ contiguous vertex, which makes it a _complex_ polygon. The fact that the edges intersections are vertices means the polygon can be split into simple polygons.
-<img src="./case3.webp" alt="Case 1, a simple polygon" width="30%"/>
+<img loading="lazy" src="./case3.webp" alt="Case 1, a simple polygon" width="30%"/>
 
 
 The `triangulate` crate (and, AFAIK, all other implementations) needs actual paths - an _ordered_ list of vertices. It also does not support non-simple polygons, which excludes case 3.
