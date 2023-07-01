@@ -30,10 +30,11 @@ export function myAstro(): AstroIntegration  {
         name: PKG_NAME,
         hooks: {
             'astro:config:setup': async ({ command, config, updateConfig, injectRoute }) => {
+                const isDev = command === 'dev';
                 const remarkPlugins = [
                     // remarkEmoji,
                     // remarkA11yEmoji,
-                    autoAbstract,
+                    () => autoAbstract(isDev),
                     // [autoHero, { baseDir }],
                     // remarkUnwrapImages,
                     // [relativeImages, { baseDir }],
