@@ -1,4 +1,4 @@
-import init, { make_fragment } from "./pkg/sample_rust";
+import init, { make_fragment } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 export class AstroGreet extends WasmHost<typeof make_fragment, {
     div: HTMLDivElement,
@@ -13,7 +13,7 @@ export class AstroGreet extends WasmHost<typeof make_fragment, {
         console.log("define", e, message);
             const output = document.createElement("div");
             div.appendChild(output);
-            const data = { div: output, x: 50, t: 0, s: e.dataset.message };
+            const data = { div: output, x: parseFloat(e.dataset.x ?? "50"), t: 0, s: e.dataset.message };
             pane.addInput(data, "x");
             pane.addMonitor(data, "t");
             pane.addMonitor(data, "s");

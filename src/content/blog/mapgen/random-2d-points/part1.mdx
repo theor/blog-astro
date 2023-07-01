@@ -141,7 +141,7 @@ The job is linear, running on a single thread, sequentially assigning a position
 
 This is the result:
 
-![Unity.Mathematics.Random](./images/1-Points-Rnd.png)
+![Unity.Mathematics.Random](./_images/1-Points-Rnd.png)
 
 Which is, well, only a bunch of points. With way too much overlap.
 
@@ -217,11 +217,11 @@ struct GeneratePointsHaltonJob : IJobParallelFor
 
 The result, for a low count like that, is not a drastic change, but good enough not to have to relax the points and should avoid a few edge cases of the upcoming Delaunay triangulation.
 
-![Halton sequence, bases 7/11](./images/Halton7-11.png)
+![Halton sequence, bases 7/11](./_images/Halton7-11.png)
 
 Now, just to show why you should be careful when picking bases for Halton:
-![Halton with identical bases 3/3](./images/Halton3-3.png)
-![Halton with divisible bases 4/24](./images/Halton4-24.png)
+![Halton with identical bases 3/3](./_images/Halton3-3.png)
+![Halton with divisible bases 4/24](./_images/Halton4-24.png)
 
 And, as a bonus, let's use the `ColorFromIndex` method described earlier in `DrawGizmosSelected`:
 
@@ -235,7 +235,7 @@ for (var i = 0; i < _points.Length; i++)
 }
 ```
 
-![1000 points colored with the Halton sequence](./images/HaltonColors.png)
+![1000 points colored with the Halton sequence](./_images/_HaltonColors.png)
 
 ## Performance
 
