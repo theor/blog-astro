@@ -6,8 +6,17 @@ wasm_template.innerHTML = `
 .root {
     width: 100%;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
 }
+
+/* Medium devices (landscape tablets, 768px and up) */
+@media only screen and (min-width: 768px) {
+    .root {
+        flex-direction: row;
+
+    }
+}
+
 .root > div {
     flex: 1;
 }
@@ -47,29 +56,45 @@ export abstract class WasmHost<T, TD>  {
     async create() {
         const tpl = wasm_template.content.cloneNode(true);
         this.div.appendChild(tpl);
-        this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: "SVG" });
-        const data = await this.onCreate(this.div.querySelector("#content")!, this.pane);
+       
 
-        this.pane.on('change', (ev) => {
-            // console.log('changed: ' + JSON.stringify(ev.value), data);
-            // data.result = this.f(...Object.values(this.mapData(data)));
-            this.onChange(data, this.f)
-        });
-        if (this.onUpdate) {
-            (data as any).paused = false;
-            this.pane.addInput(data, "paused");
-            const update = () => {
-                if (!data.paused) {
-                    this.onUpdate!(data);
-                    this.onChange(data, this.f);
+        new IntersectionObserver((entries, observer) => {
+            entries.forEach(async entry => {
+              if(entry.isIntersecting) {
+                console.log(entry);
+
+                this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: "SVG" });
+                
+        const pane = this.pane;
+                const data = await this.onCreate(this.div.querySelector("#content")!, this.pane);
+        
+                this.pane.on('change', (ev) => {
+                    // console.log('changed: ' + JSON.stringify(ev.value), data);
+                    // data.result = this.f(...Object.values(this.mapData(data)));
+                    this.onChange(data, this.f)
+                });
+
+                if (this.onUpdate) {
+                    (data as any).paused = false;
+                    pane.addInput(data, "paused");
+                    const update = () => {
+                        if (!data.paused) {
+                            this.onUpdate!(data);
+                            this.onChange(data, this.f);
+                        }
+                        requestAnimationFrame(update);
+                    }
+        
+                    requestAnimationFrame(update);
+                } else {
+        
+                    this.onChange(data, this.f)
                 }
-                requestAnimationFrame(update);
-            }
+                observer.disconnect();
+              }
+            });
+          }, {threshold: 0.4}).observe(this.div);
 
-            requestAnimationFrame(update);
-        } else {
 
-            this.onChange(data, this.f)
-        }
     }
 }
