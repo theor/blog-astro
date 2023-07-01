@@ -1,6 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
-export const memory: WebAssembly.Memory;
+// export const memory: WebAssembly.Memory;
 export function compute_desc(): number;
 export function svg_test_desc(): number;
 export function svg_test(a: number, b: number, c: number, d: number): void;

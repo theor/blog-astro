@@ -1,6 +1,6 @@
 const load = async function () {
   let images: Record<string, () => Promise<unknown>> | undefined = undefined;
-  images = import.meta.glob(["./content/blog/**/**.*", "!**.mdx", "!**.md_"]);
+  images = import.meta.glob(["./content/blog/**/**.*", "!**.mdx", "!**.md_", "!**.wasm"]);
   // console.log("all", images);
 
   return images;
