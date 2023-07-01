@@ -1,0 +1,14 @@
+{
+  "name": "sample-rust",
+  "version": "0.0.0",
+  "files": [
+    "sample_rust_bg.wasm",
+    "sample_rust.js",
+    "sample_rust.d.ts"
+  ],
+  "module": "sample_rust.js",
+  "types": "sample_rust.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
