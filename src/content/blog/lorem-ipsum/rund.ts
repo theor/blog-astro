@@ -5,17 +5,18 @@ export class AstroGreet extends WasmHost<typeof make_fragment, {
     x: number,
     t: number,
 }> {
-    constructor(x:any) {
-        console.warn(x)
-        super(make_fragment, (div, pane) => {
+    constructor(e:HTMLElement) {
+        console.warn(e)
+        super(e, make_fragment, (div, pane) => {
             
-        const message = this.dataset.message;
-        console.log("define", message);
+        const message = e.dataset;
+        console.log("define", e, message);
             const output = document.createElement("div");
             div.appendChild(output);
-            const data = { div: output, x: 50, t: 0 };
+            const data = { div: output, x: 50, t: 0, s: e.dataset.message };
             pane.addInput(data, "x");
             pane.addMonitor(data, "t");
+            pane.addMonitor(data, "s");
             return init().then(() => data);
         }, (data, f) => {
             const fragment = f(data.x, data.t);
@@ -32,6 +33,6 @@ export class AstroGreet extends WasmHost<typeof make_fragment, {
     }
 }
 
-// document.querySelectorAll("astro-greet").forEach(x => x.appendChild(document.createElement(AstroGreet)))
-customElements.define("astro-greet", AstroGreet);
+document.querySelectorAll("astro-greet").forEach(x => new AstroGreet(x).create());
+// customElements.define("astro-greet", AstroGreet);
 console.log("registered");

@@ -17,20 +17,24 @@ wasm_template.innerHTML = `
 <div id="pane"></div>
 </div>`;
 
-export abstract class WasmHost<T, TD> extends HTMLElement {
+export abstract class WasmHost<T, TD>  {
 
     f: T;
     pane?: Pane;
+    div: HTMLElement;
 
     onChange: (data: any, f: T) => any;
     onCreate: (div: HTMLElement, pane: Pane) => any;
     onUpdate?: (data: TD) => void;
 
-    constructor(f: T,
+    constructor(
+        div: HTMLElement,
+        f: T,
         onCreate: (div: HTMLElement, pane: Pane) => Promise<TD>,
         onChange: (data: TD, f: T) => any,
         onUpdate?: (data: TD) => void) {
-        super();
+        // super();
+        this.div = div;
         this.f = f;
         this.onCreate = onCreate;
         this.onChange = onChange;
@@ -42,9 +46,9 @@ export abstract class WasmHost<T, TD> extends HTMLElement {
     }
     async create() {
         const tpl = wasm_template.content.cloneNode(true);
-        this.appendChild(tpl);
-        this.pane = new Pane({ container: this.querySelector("#pane")!, title: "SVG" });
-        const data = await this.onCreate(this.querySelector("#content")!, this.pane);
+        this.div.appendChild(tpl);
+        this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: "SVG" });
+        const data = await this.onCreate(this.div.querySelector("#content")!, this.pane);
 
         this.pane.on('change', (ev) => {
             // console.log('changed: ' + JSON.stringify(ev.value), data);

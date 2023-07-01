@@ -1,8 +1,7 @@
 ---
-const { id } = Astro.props;
 ---
 <script>
     import {AstroGreet} from './rund';
 </script>
 
-<astro-greet data-message={id} as="asdasd" width="24"></astro-greet>
+<astro-greet {...Astro.props}></astro-greet>
