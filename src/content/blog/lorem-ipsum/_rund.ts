@@ -42,10 +42,9 @@ export class AstroGreet extends WasmHost<typeof render, {
     x: number;
     t: number;
     r: number;
-    b: ArrayBuffer;
-    fireBuffer: ArrayBuffer;
+    b: Uint8ClampedArray;
+    fireBuffer: Uint8Array;
     mousePos: number[];
-    cutoff: number;
 }> {
     constructor(e:HTMLElement) {
         console.warn(e)
@@ -55,8 +54,8 @@ export class AstroGreet extends WasmHost<typeof render, {
             canvas.height = HEIGHT;
             div.appendChild(canvas);
             
-      const arrayBuffer = new ArrayBuffer(WIDTH * HEIGHT * 4);
-      const fireBuffer = new ArrayBuffer(WIDTH * HEIGHT);
+      const arrayBuffer = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
+      const fireBuffer = new Uint8Array(WIDTH * HEIGHT);
        
       const data = {
         canvas: canvas,
@@ -67,12 +66,10 @@ export class AstroGreet extends WasmHost<typeof render, {
         b: arrayBuffer,
         fireBuffer: fireBuffer,
         mousePos: [0, 0],
-        cutoff: 40,
       };
 
-      pane.addInput(data, "r", { min: 1, max: 50, step: 1 });
+      pane.addInput(data, "r", { label:"mouse radius", min: 1, max: 50, step: 1 });
       pane.addInput(data, "x", { min: 0.9, max: 1, step: 0.005 });
-      pane.addInput(data, "cutoff", { min: -200, max: 250, step: 1 });
       pane.addMonitor(data, "t");
 
       
@@ -86,9 +83,9 @@ export class AstroGreet extends WasmHost<typeof render, {
 
             return init().then(() => data);
         }, (data, f) => {
-            const pixels = new Uint8ClampedArray(data.b);
-            const b = new ImageData(pixels, WIDTH, HEIGHT);
-            const fb = new Uint8Array(data.fireBuffer);
+            
+            const b = new ImageData(data.b, WIDTH, HEIGHT);
+            const fb = data.fireBuffer;
             const r = data.r;
 
              // circle around mouse pos
@@ -103,8 +100,7 @@ export class AstroGreet extends WasmHost<typeof render, {
         }
       }
 
-            f(data.x, new Uint8Array(data.b), fb, WIDTH, HEIGHT);
-
+            f(data.x, data.b, fb, WIDTH, HEIGHT);
             data.ctx.putImageData(b, 0, 0);
         },
         

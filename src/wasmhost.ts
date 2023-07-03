@@ -1,5 +1,7 @@
-
+// typical use case with :
+// wasm-pack build --release --target web -d "[..]blog-astro/src/content/blog/lorem-ipsum/_pkg" --no-typescript   
 import { Pane } from "tweakpane";
+
 const wasm_template = document.createElement("template");
 wasm_template.innerHTML = `
 <style>
