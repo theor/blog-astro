@@ -616,6 +616,11 @@
   resolved "https://registry.yarnpkg.com/@tweakpane/core/-/core-1.1.9.tgz#29d54fea38a489e140958616088f9d09d3c04379"
   integrity sha512-9tq+KAhaqPiOgsFyLPAz1IMXkVfhRqxGzAgy1ps3As6o3W7XjnU7sev6OlD/Z+Pzw8uZVMukkSHf2e0uCU6u0A==
 
+"@tweakpane/plugin-essentials@^0.1.8":
+  version "0.1.8"
+  resolved "https://registry.yarnpkg.com/@tweakpane/plugin-essentials/-/plugin-essentials-0.1.8.tgz#fad697c91d794f0a28cbe8afe1af78b1cd21509e"
+  integrity sha512-tWBXzWafcjiq+/XvZnOgSz0B+YikwZj0NnqiZPba+AwTiDqNk/6PU3so0Bs0qyxLIJKT/+AUPRL8jBmtERYzwA==
+
 "@types/acorn@^4.0.0":
   version "4.0.6"
   resolved "https://registry.yarnpkg.com/@types/acorn/-/acorn-4.0.6.tgz#d61ca5480300ac41a7d973dd5b84d0a591154a22"

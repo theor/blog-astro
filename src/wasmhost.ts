@@ -1,6 +1,7 @@
 // typical use case with :
 // wasm-pack build --release --target web -d "[..]blog-astro/src/content/blog/lorem-ipsum/_pkg" --no-typescript   
 import { Pane } from "tweakpane";
+import * as EssentialsPlugin from '@tweakpane/plugin-essentials';
 
 const wasm_template = document.createElement("template");
 wasm_template.innerHTML = `
@@ -18,7 +19,10 @@ wasm_template.innerHTML = `
 
     }
 }
-
+canvas {
+    image-rendering: pixelated;
+    border: solid 1px black;
+}
 .root > div {
     flex: 1;
 }
@@ -28,7 +32,7 @@ wasm_template.innerHTML = `
 <div id="pane"></div>
 </div>`;
 
-export abstract class WasmHost<T, TD>  {
+export class WasmHost<T, TD>  {
 
     f: T;
     pane?: Pane;
@@ -36,14 +40,14 @@ export abstract class WasmHost<T, TD>  {
 
     onChange: (data: any, f: T) => any;
     onCreate: (div: HTMLElement, pane: Pane) => any;
-    onUpdate?: (data: TD) => void;
+    onUpdate?: (data: TD, t: number) => void;
 
     constructor(
         div: HTMLElement,
         f: T,
         onCreate: (div: HTMLElement, pane: Pane) => Promise<TD>,
         onChange: (data: TD, f: T) => any,
-        onUpdate?: (data: TD) => void) {
+        onUpdate?: (data: TD, t: number) => void) {
         // super();
         this.div = div;
         this.f = f;
@@ -67,6 +71,7 @@ export abstract class WasmHost<T, TD>  {
 
                 this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: "SVG" });
                 
+this.pane.registerPlugin(EssentialsPlugin);
         const pane = this.pane;
                 const data = await this.onCreate(this.div.querySelector("#content")!, this.pane);
         
@@ -76,15 +81,20 @@ export abstract class WasmHost<T, TD>  {
                     this.onChange(data, this.f)
                 });
 
+let prev_t = 0;                
                 if (this.onUpdate) {
                     (data as any).paused = false;
                     pane.addInput(data, "paused");
-                    const update = () => {
+                    const update = (t:DOMHighResTimeStamp) => {
+                        if(t - prev_t > 33) {
+                            prev_t = t;
+                        // console.log(t)
                         if (!data.paused) {
-                            this.onUpdate!(data);
+                            this.onUpdate!(data, t / 1000.0);
                             this.onChange(data, this.f);
                         }
-                        requestAnimationFrame(update);
+                    }
+                    requestAnimationFrame(update);
                     }
         
                     requestAnimationFrame(update);
