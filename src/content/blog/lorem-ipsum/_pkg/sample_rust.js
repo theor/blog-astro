@@ -243,6 +243,22 @@ export function make_fragment(x, t) {
     return takeObject(ret);
 }
 
+let cachedUint32Memory0 = null;
+
+function getUint32Memory0() {
+    if (cachedUint32Memory0 === null || cachedUint32Memory0.byteLength === 0) {
+        cachedUint32Memory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32Memory0;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32Memory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
 function handleError(f, args) {
     try {
         return f.apply(this, args);
@@ -257,6 +273,47 @@ function isLikeNone(x) {
 /**
 */
 export const Kind = Object.freeze({ A:0,"0":"A",B:1,"1":"B", });
+/**
+*/
+export class Plasma {
+
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(Plasma.prototype);
+        obj.__wbg_ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_plasma_free(ptr);
+    }
+    /**
+    * @param {number} w
+    * @param {number} h
+    */
+    constructor(w, h) {
+        const ret = wasm.plasma_new(w, h);
+        return Plasma.__wrap(ret);
+    }
+    /**
+    * @param {Uint32Array} b
+    * @param {number} t
+    */
+    update(b, t) {
+        var ptr0 = passArray32ToWasm0(b, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.plasma_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), t);
+    }
+}
 /**
 */
 export class StatefulFire {
@@ -315,6 +372,47 @@ export class StatefulFire {
         var ptr0 = passArray8ToWasm0(b, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         wasm.statefulfire_update(this.__wbg_ptr, t, ptr0, len0, addHeapObject(b), attenuation, min_x, max_x);
+    }
+}
+/**
+*/
+export class Tunnel {
+
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(Tunnel.prototype);
+        obj.__wbg_ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_tunnel_free(ptr);
+    }
+    /**
+    * @param {number} w
+    * @param {number} h
+    */
+    constructor(w, h) {
+        const ret = wasm.tunnel_new(w, h);
+        return Tunnel.__wrap(ret);
+    }
+    /**
+    * @param {Uint32Array} b
+    * @param {number} t
+    */
+    update(b, t) {
+        var ptr0 = passArray32ToWasm0(b, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.tunnel_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), t);
     }
 }
 
@@ -460,6 +558,7 @@ function __wbg_finalize_init(instance, module) {
     __wbg_init.__wbindgen_wasm_module = module;
     cachedFloat64Memory0 = null;
     cachedInt32Memory0 = null;
+    cachedUint32Memory0 = null;
     cachedUint8Memory0 = null;
 
     wasm.__wbindgen_start();

@@ -1,4 +1,4 @@
-import init, { StatefulFire, make_fragment, render } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, make_fragment, render } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 // export class AstroGreet extends WasmHost<typeof make_fragment, {
 //     div: HTMLDivElement,
@@ -115,17 +115,57 @@ export class AstroGreet extends WasmHost<typeof render, {
 }
 
 enum Sample {
+    Plasma = "Plasma",
     Fire = "fire",
     FireState = "firestate",
     Svg = "svg",
 
 }
+
+function plasma(x: HTMLElement) {
+    const p = new Plasma(WIDTH, HEIGHT);
+    new WasmHost(
+        x,
+        p.update.bind(p),
+        async (div, pane) => {
+
+            const canvas = document.createElement("canvas");
+            canvas.width = WIDTH;
+            canvas.height = HEIGHT;
+            canvas.style.width = `${WIDTH * 4}px`;
+            canvas.style.height = `${HEIGHT * 4}px`;
+            div.appendChild(canvas);
+
+            const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
+
+const data = {t:0, b: arrayBuffer, ctx: canvas.getContext('2d')!,};
+(data as any).tInput = pane.addInput(data, "t", {min: 0, max: 1000});
+
+return data;
+        },
+        (data, f) => {
+            
+            const b = new ImageData(new Uint8ClampedArray(data.b.buffer), WIDTH, HEIGHT);
+
+            f(data.b, data.t);
+            data.ctx.putImageData(b, 0, 0);
+        },
+        (data, t) => {
+            data.t = t;
+            (data as any).tInput.refresh()
+        },
+    ).create("Plasma");
+}
+
 init().then(() => {
     document.querySelectorAll("astro-greet").forEach(x => {
         const sample = ((x as HTMLElement).dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
+            case Sample.Plasma:
+                plasma(x as HTMLElement);
+                break;
             case Sample.Fire:
-                new AstroGreet(x as HTMLElement).create();
+                new AstroGreet(x as HTMLElement).create("Fire");
                 break;
             case Sample.FireState:
                 const sf = new StatefulFire(WIDTH, HEIGHT);
@@ -203,32 +243,18 @@ init().then(() => {
                     (data, f) => {
 
                         const b = new ImageData(data.b, WIDTH, HEIGHT);
-                        // const fb = data.fireBuffer;
-                        const r = data.r;
 
                         sf.circle(data.mousePos[0], data.mousePos[1], data.r);
 
-                        // circle around mouse pos
-                        // for (let x = -r; x < r; x++) {
-                        //     for (let y = -r; y < r; y++) {
-                        //         const d = x * x + y * y;
-                        //         if (d <= r * r)
-                        //             fb[Math.min(HEIGHT - 1, Math.max(0, data.mousePos[1] + y)) * WIDTH +
-                        //                 ((data.mousePos[0] + x) % WIDTH)] =
-                        //                 Math.random() * 255 * ((d / (r)));
-
-                        //     }
-                        // }
 
                         f(data.t, data.b, data.attenuation, data.x.min, data.x.max);
-                        // data.ctx.scale(2, 2);
                         data.ctx.putImageData(b, 0, 0);
                     },
 
                     (data, t) => {
                         data.t = t;
 
-                    }).create();
+                    }).create("Doom fire");
 
                 break;
             case Sample.Svg:
@@ -244,7 +270,7 @@ init().then(() => {
                         data.div.replaceChildren(f(data.x, data.t))
                     },
                     (data) => data.t += 0.16,
-                ).create();
+                ).create("Svg generation");
                 break;
 
             default:

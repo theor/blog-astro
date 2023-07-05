@@ -59,7 +59,7 @@ export class WasmHost<T, TD>  {
     connectedCallback() {
         this.create();
     }
-    async create() {
+    async create(name: string) {
         const tpl = wasm_template.content.cloneNode(true);
         this.div.appendChild(tpl);
        
@@ -69,7 +69,7 @@ export class WasmHost<T, TD>  {
               if(entry.isIntersecting) {
                 console.log(entry);
 
-                this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: "SVG" });
+                this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: name });
                 
 this.pane.registerPlugin(EssentialsPlugin);
         const pane = this.pane;
