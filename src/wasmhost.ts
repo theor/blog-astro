@@ -22,6 +22,7 @@ wasm_template.innerHTML = `
 canvas {
     image-rendering: pixelated;
     border: solid 1px black;
+    background: black;
 }
 .root > div {
     flex: 1;

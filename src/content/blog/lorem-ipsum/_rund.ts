@@ -1,4 +1,4 @@
-import init, { Plasma, StatefulFire, make_fragment, render } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, Stars } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 // export class AstroGreet extends WasmHost<typeof make_fragment, {
 //     div: HTMLDivElement,
@@ -36,85 +36,9 @@ import { WasmHost } from "@/wasmhost";
 
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
-export class AstroGreet extends WasmHost<typeof render, {
-    canvas: HTMLCanvasElement;
-    ctx: CanvasRenderingContext2D;
-    x: number;
-    t: number;
-    r: number;
-    b: Uint8ClampedArray;
-    fireBuffer: Uint8Array;
-    mousePos: number[];
-}> {
-    constructor(e: HTMLElement) {
-        console.warn(e)
-        super(e, render, (div, pane) => {
-            const canvas = document.createElement("canvas");
-            canvas.width = WIDTH;
-            canvas.height = HEIGHT;
-            canvas.style.width = `${WIDTH * 4}px`;
-            canvas.style.height = `${HEIGHT * 4}px`;
-            div.appendChild(canvas);
-
-            const arrayBuffer = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
-            const fireBuffer = new Uint8Array(WIDTH * HEIGHT);
-
-            const data = {
-                canvas: canvas,
-                ctx: canvas.getContext('2d')!,
-                x: 0.995,
-                t: 0,
-                r: 5,
-                b: arrayBuffer,
-                fireBuffer: fireBuffer,
-                mousePos: [0, 0],
-            };
-            data.ctx.scale(2,2);
-
-            pane.addInput(data, "r", { label: "mouse radius", min: 1, max: 50, step: 1 });
-            pane.addInput(data, "x", { min: 0.9, max: 1, step: 0.005 });
-            pane.addMonitor(data, "t");
-
-
-            canvas.addEventListener('mousemove', e => {
-                const bb = canvas.getBoundingClientRect();
-                const x = Math.floor((e.clientX - bb.left) / bb.width * canvas.width);
-                const y = Math.floor((e.clientY - bb.top) / bb.height * canvas.height);
-
-                data.mousePos = [x, y];
-            });
-
-            return Promise.resolve(data);
-        }, (data, f) => {
-
-            const b = new ImageData(data.b, WIDTH, HEIGHT);
-            const fb = data.fireBuffer;
-            const r = data.r;
-
-            // circle around mouse pos
-            for (let x = -r; x < r; x++) {
-                for (let y = -r; y < r; y++) {
-                    const d = x * x + y * y;
-                    if (d <= r * r)
-                        fb[Math.min(HEIGHT - 1, Math.max(0, data.mousePos[1] + y)) * WIDTH +
-                            ((data.mousePos[0] + x) % WIDTH)] =
-                            Math.random() * 255 * ((d / (r)));
-
-                }
-            }
-
-            f(data.x, data.b, fb, WIDTH, HEIGHT);
-            data.ctx.putImageData(b, 0, 0);
-        },
-
-            data => {
-                data.t += 0.16;
-
-            });
-    }
-}
 
 enum Sample {
+    Stars = "Stars",
     Plasma = "Plasma",
     Fire = "fire",
     FireState = "firestate",
@@ -122,6 +46,42 @@ enum Sample {
 
 }
 
+function stars(x: HTMLElement) {
+    const WIDTH = 512;
+    const HEIGHT = 512;
+    const p = new Stars(WIDTH, HEIGHT);
+    new WasmHost(
+        x,
+        p.update.bind(p),
+        async (div, pane) => {
+
+            const canvas = document.createElement("canvas");
+            canvas.width = WIDTH;
+            canvas.height = HEIGHT;
+            canvas.style.width = `${WIDTH}px`;
+            canvas.style.height = `${HEIGHT}px`;
+            div.appendChild(canvas);
+
+            const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
+
+            const data = { t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!, };
+            (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 1000 });
+
+            return data;
+        },
+        (data, f) => {
+
+            const b = new ImageData(new Uint8ClampedArray(data.b.buffer), WIDTH, HEIGHT);
+
+            f(new Uint8Array(data.b.buffer), data.t);
+            data.ctx.putImageData(b, 0, 0);
+        },
+        (data, t) => {
+            data.t = t;
+            // (data as any).tInput.refresh()
+        },
+    ).create("Stars");
+}
 function plasma(x: HTMLElement) {
     const p = new Plasma(WIDTH, HEIGHT);
     new WasmHost(
@@ -138,21 +98,21 @@ function plasma(x: HTMLElement) {
 
             const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
 
-const data = {t:0, b: arrayBuffer, ctx: canvas.getContext('2d')!,};
-(data as any).tInput = pane.addInput(data, "t", {min: 0, max: 1000});
+            const data = { t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!, };
+            (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 1000 });
 
-return data;
+            return data;
         },
         (data, f) => {
-            
+
             const b = new ImageData(new Uint8ClampedArray(data.b.buffer), WIDTH, HEIGHT);
 
-            f(data.b, data.t);
+            f(new Uint8Array(data.b.buffer), data.t);
             data.ctx.putImageData(b, 0, 0);
         },
         (data, t) => {
             data.t = t;
-            (data as any).tInput.refresh()
+            // (data as any).tInput.refresh()
         },
     ).create("Plasma");
 }
@@ -161,24 +121,25 @@ init().then(() => {
     document.querySelectorAll("astro-greet").forEach(x => {
         const sample = ((x as HTMLElement).dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
+            case Sample.Stars:
+                stars(x as HTMLElement);
+                break;
             case Sample.Plasma:
                 plasma(x as HTMLElement);
                 break;
-            case Sample.Fire:
-                new AstroGreet(x as HTMLElement).create("Fire");
-                break;
+            
             case Sample.FireState:
                 const sf = new StatefulFire(WIDTH, HEIGHT);
-                const palette = new Uint8Array(37*3);
+                const palette = new Uint8Array(37 * 3);
                 for (let index = 0; index < 37; index++) {
                     let c = [
                         Math.round(index / 37.0 * 255),
                         Math.round(255 - index / 37.0 * 255),
-                          0];
-                    palette[index*3+0] = c[0];
-                    palette[index*3+1] = c[1];
-                    palette[index*3+2] = c[2];
-                    
+                        0];
+                    palette[index * 3 + 0] = c[0];
+                    palette[index * 3 + 1] = c[1];
+                    palette[index * 3 + 2] = c[2];
+
                 }
                 // sf.set_palette(palette);
                 new WasmHost(x as HTMLElement,
@@ -197,37 +158,20 @@ init().then(() => {
                         const data = {
                             canvas: canvas,
                             ctx: canvas.getContext('2d')!,
-                            x:{min: -1, max: 1},
+                            x: { min: -1, max: 2 },
                             t: 0,
                             r: 5,
                             b: arrayBuffer,
                             fireBuffer: fireBuffer,
                             mousePos: [0, 0],
-                            c: {r:0, g: 0, b: 0},
+                            c: { r: 0, g: 0, b: 0 },
                             attenuation: 1,
                         };
-                        pane.addBlade({
-                            view: 'buttongrid',
-                            size: [1,1],
-                            cells: (x, y) => ({
-
-                              title: [
-                                ['NW'],
-                              ][y][x],
-                            }),
-                            label: 'buttongrid',
-                          }).on('click', (ev) => {
-                            console.log(ev);
-                          });
+                      
                         pane.addInput(data, "r", { label: "mouse radius", min: 1, max: 50, step: 1 });
-                        // pane.addInput(data, "x", { min: 0.9, max: 1, step: 0.005 });
-                        // pane.addInput(data, "c", {
-                            // picker: 'inline',
-                            // expanded: true,
-                        // });
                         pane.addMonitor(data, "t");
-                        pane.addInput(data, "attenuation", {min:0, max: 8, step: 1});
-                        pane.addInput(data, "x", {min:-8, max: 8, step: 1});
+                        pane.addInput(data, "attenuation", { min: 0, max: 8, step: 1 });
+                        pane.addInput(data, "x", { min: -8, max: 8, step: 1 });
 
 
                         canvas.addEventListener('mousemove', e => {
@@ -257,22 +201,7 @@ init().then(() => {
                     }).create("Doom fire");
 
                 break;
-            case Sample.Svg:
-                new WasmHost(x as HTMLElement, make_fragment,
-                    (div, pane) => {
-                        const data = { x: 1, t: 1, div: div };
-                        pane.addInput(data, "x", { min: 0, max: 100 });
-                        pane.addMonitor(data, "t");
-                        return Promise.resolve(data);
-                    },
-                    (data, f) => {
-                        // console.log(data)
-                        data.div.replaceChildren(f(data.x, data.t))
-                    },
-                    (data) => data.t += 0.16,
-                ).create("Svg generation");
-                break;
-
+           
             default:
                 x.innerHTML = "unknown";
                 break;
