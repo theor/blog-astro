@@ -1,8 +1,13 @@
 ---
+const {height = "512px"} = Astro.props
 ---
 <script>
     import {AstroGreet} from './_rund';
 </script>
-
-<astro-greet  {...Astro.props}></astro-greet>
+<style define:vars={{wasmheight: height}}>
+    div {
+        min-height: var(--wasmheight);
+    }
+</style>
+<div {...Astro.props} ></astro-greet>
     

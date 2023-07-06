@@ -10,12 +10,14 @@ wasm_template.innerHTML = `
     width: 100%;
   display: flex;
   flex-direction: column;
+  margin-bottom: 2em;
 }
 
 /* Medium devices (landscape tablets, 768px and up) */
 @media only screen and (min-width: 768px) {
     .root {
         flex-direction: row;
+        flex-wrap: wrap;
 
     }
 }
@@ -57,9 +59,6 @@ export class WasmHost<T, TD>  {
         this.onUpdate = onUpdate;
     }
 
-    connectedCallback() {
-        this.create();
-    }
     async create(name: string) {
         const tpl = wasm_template.content.cloneNode(true);
         this.div.appendChild(tpl);

@@ -66,6 +66,22 @@ export function main() {
     wasm.main();
 }
 
+let cachedUint32Memory0 = null;
+
+function getUint32Memory0() {
+    if (cachedUint32Memory0 === null || cachedUint32Memory0.byteLength === 0) {
+        cachedUint32Memory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32Memory0;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32Memory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
 const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available') } } );
 
 const encodeString = (typeof cachedTextEncoder.encodeInto === 'function'
@@ -159,11 +175,11 @@ export class Plasma {
         return Plasma.__wrap(ret);
     }
     /**
-    * @param {Uint8Array} b
+    * @param {Uint32Array} b
     * @param {number} t
     */
     update(b, t) {
-        var ptr0 = passArray8ToWasm0(b, wasm.__wbindgen_malloc);
+        var ptr0 = passArray32ToWasm0(b, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         wasm.plasma_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), t);
     }
@@ -202,11 +218,14 @@ export class Stars {
     /**
     * @param {Uint8Array} b
     * @param {number} t
+    * @param {number} vx
+    * @param {number} vy
+    * @param {number} speed_factor
     */
-    update(b, t) {
+    update(b, t, vx, vy, speed_factor) {
         var ptr0 = passArray8ToWasm0(b, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
-        wasm.stars_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), t);
+        wasm.stars_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), t, vx, vy, speed_factor);
     }
 }
 /**
@@ -347,6 +366,7 @@ function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
     __wbg_init.__wbindgen_wasm_module = module;
     cachedInt32Memory0 = null;
+    cachedUint32Memory0 = null;
     cachedUint8Memory0 = null;
 
     wasm.__wbindgen_start();
