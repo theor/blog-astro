@@ -1,37 +1,5 @@
-import init, { Plasma, StatefulFire, Stars } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, Stars, Roads } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
-// export class AstroGreet extends WasmHost<typeof make_fragment, {
-//     div: HTMLDivElement,
-//     x: number,
-//     t: number,
-// }> {
-//     constructor(e:HTMLElement) {
-//         console.warn(e)
-//         super(e, make_fragment, (div, pane) => {
-
-//         const message = e.dataset;
-//         console.log("define", e, message);
-//             const output = document.createElement("div");
-//             div.appendChild(output);
-//             const data = { div: output, x: parseFloat(e.dataset.x ?? "50"), t: 0, s: e.dataset.message };
-//             pane.addInput(data, "x");
-//             pane.addMonitor(data, "t");
-//             pane.addMonitor(data, "s");
-//             return init().then(() => data);
-//         }, (data, f) => {
-//             const fragment = f(data.x, data.t);
-//             if (data.div.hasChildNodes())
-//                 data.div.replaceChild(fragment, data.div.firstChild!)
-//             else
-//                 data.div.appendChild(fragment);
-//         },
-
-//       data => {
-//         data.t += 0.16;
-
-//       });
-//     }
-// }
 
 
 const WIDTH = 32 * 4;
@@ -43,7 +11,60 @@ enum Sample {
     Fire = "fire",
     FireState = "firestate",
     Svg = "svg",
+    Roads = "Roads",
 
+}
+function roads(x: HTMLElement) {
+    const WIDTH = 2 * 640;
+    const HEIGHT = 2 * 480;
+    const p = new Roads(WIDTH, HEIGHT);
+    new WasmHost(
+        x,
+        p.update.bind(p),
+        async (div, pane) => {
+
+            const canvas = document.createElement("canvas");
+            canvas.width = WIDTH;
+            canvas.height = HEIGHT;
+            canvas.style.width = `${WIDTH}px`;
+            canvas.style.height = `${HEIGHT}px`;
+            div.appendChild(canvas);
+
+            const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
+
+            const data = {
+                t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!,
+                mousePos: [0, 0],
+                speed_factor: 0.06,
+            };
+
+
+
+            canvas.addEventListener('mousemove', e => {
+                const bb = canvas.getBoundingClientRect();
+                const x = (e.clientX - bb.left) / bb.width;
+                const y = (e.clientY - bb.top) / bb.height;
+
+                data.mousePos = [x, y];
+            });
+
+            pane.addInput(data, "t", { min: 14, max: 25 });
+            // pane.addMonitor(data, "t");
+            // pane.addInput(data, "speed_factor", { min: 0.01, max: 0.2, step: 0.01, });
+
+            return data;
+        },
+        (data, f) => {
+
+            const b = new ImageData(new Uint8ClampedArray(data.b.buffer), WIDTH, HEIGHT);
+
+            f(new Uint32Array(data.b.buffer), data.t);
+            data.ctx.putImageData(b, 0, 0);
+        },
+        (data, t) => {
+            data.t = t;
+        },
+    ).create("Roads");
 }
 
 function stars(x: HTMLElement) {
@@ -137,6 +158,9 @@ init().then(() => {
     document.querySelectorAll("div[data-sample]").forEach(x => {
         const sample = ((x as HTMLElement).dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
+            case Sample.Roads:
+                roads(x as HTMLElement);
+                break;
             case Sample.Stars:
                 stars(x as HTMLElement);
                 break;

@@ -25,6 +25,7 @@ canvas {
     image-rendering: pixelated;
     border: solid 1px black;
     background: black;
+    margin-right: 1em;
 }
 .root > div {
     flex: 1;

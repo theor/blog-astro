@@ -60,11 +60,6 @@ function addHeapObject(obj) {
     heap[idx] = obj;
     return idx;
 }
-/**
-*/
-export function main() {
-    wasm.main();
-}
 
 let cachedUint32Memory0 = null;
 
@@ -80,6 +75,11 @@ function passArray32ToWasm0(arg, malloc) {
     getUint32Memory0().set(arg, ptr / 4);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
+}
+/**
+*/
+export function main() {
+    wasm.main();
 }
 
 const cachedTextEncoder = (typeof TextEncoder !== 'undefined' ? new TextEncoder('utf-8') : { encode: () => { throw Error('TextEncoder not available') } } );
@@ -182,6 +182,47 @@ export class Plasma {
         var ptr0 = passArray32ToWasm0(b, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
         wasm.plasma_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), t);
+    }
+}
+/**
+*/
+export class Roads {
+
+    static __wrap(ptr) {
+        ptr = ptr >>> 0;
+        const obj = Object.create(Roads.prototype);
+        obj.__wbg_ptr = ptr;
+
+        return obj;
+    }
+
+    __destroy_into_raw() {
+        const ptr = this.__wbg_ptr;
+        this.__wbg_ptr = 0;
+
+        return ptr;
+    }
+
+    free() {
+        const ptr = this.__destroy_into_raw();
+        wasm.__wbg_roads_free(ptr);
+    }
+    /**
+    * @param {number} w
+    * @param {number} h
+    */
+    constructor(w, h) {
+        const ret = wasm.roads_new(w, h);
+        return Roads.__wrap(ret);
+    }
+    /**
+    * @param {Uint32Array} b
+    * @param {number} time
+    */
+    update(b, time) {
+        var ptr0 = passArray32ToWasm0(b, wasm.__wbindgen_malloc);
+        var len0 = WASM_VECTOR_LEN;
+        wasm.roads_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), time);
     }
 }
 /**
@@ -328,6 +369,9 @@ function __wbg_get_imports() {
     };
     imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
         takeObject(arg0);
+    };
+    imports.wbg.__wbg_log_a91e19aa0f9d5beb = function(arg0, arg1) {
+        console.log(getStringFromWasm0(arg0, arg1));
     };
     imports.wbg.__wbg_new_abda76e883ba8a5f = function() {
         const ret = new Error();
