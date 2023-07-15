@@ -1,4 +1,4 @@
-import init, { Plasma, StatefulFire, Stars, Roads } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, Stars, Roads, Roads2 } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 
 
@@ -36,9 +36,46 @@ function roads(x: HTMLElement) {
                 t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!,
                 mousePos: [0, 0],
                 speed_factor: 0.06,
+                dir: [0, 0],
             };
 
-
+            document.addEventListener('keydown', e => {
+                console.log(e);
+                switch (e.key) {
+                    case 'w':
+                    case 'ArrowUp':
+                        data.dir[1] = 1;
+                        break;
+                    case 's':
+                    case 'ArrowDown':
+                        data.dir[1] = -1;
+                        break;
+                    case 'a':
+                    case 'ArrowLeft':
+                        data.dir[0] = -1;
+                        break;
+                    case 'd':
+                    case 'ArrowRight':
+                        data.dir[0] = 1;
+                        break;
+                }
+            });
+            document.addEventListener('keyup', e => {
+                switch (e.key) {
+                    case 'w':
+                    case 'ArrowUp':
+                    case 's':
+                    case 'ArrowDown':
+                        data.dir[1] = 0;
+                        break;
+                    case 'a':
+                    case 'ArrowLeft':
+                    case 'd':
+                    case 'ArrowRight':
+                        data.dir[0] = 0;
+                        break;
+                }
+            });
 
             canvas.addEventListener('mousemove', e => {
                 const bb = canvas.getBoundingClientRect();
@@ -58,13 +95,105 @@ function roads(x: HTMLElement) {
 
             const b = new ImageData(new Uint8ClampedArray(data.b.buffer), WIDTH, HEIGHT);
 
-            f(new Uint32Array(data.b.buffer), data.t);
+            f(new Uint32Array(data.b.buffer), data.t, data.dir[0], data.dir[1]);
             data.ctx.putImageData(b, 0, 0);
         },
         (data, t) => {
             data.t = t;
         },
     ).create("Roads");
+}
+function roads2(x: HTMLElement) {
+    const WIDTH = 2 * 640;
+    const HEIGHT = 2 * 480;
+    // 2: 2.56ms self 1.39ms
+    // 1: 3.59
+    const p = new Roads2(WIDTH, HEIGHT);
+    new WasmHost(
+        x,
+        p.update.bind(p),
+        async (div, pane) => {
+
+            const canvas = document.createElement("canvas");
+            canvas.tabIndex = 0;
+            canvas.width = WIDTH;
+            canvas.height = HEIGHT;
+            canvas.style.width = `${WIDTH}px`;
+            canvas.style.height = `${HEIGHT}px`;
+            div.appendChild(canvas);
+
+
+            const data = {
+                t: 0, ctx: canvas.getContext('2d')!,
+                mousePos: [0, 0],
+                speed_factor: 0.06,
+                dir: [0, 0],
+            };
+
+            canvas.addEventListener('keydown', e => {
+                console.log(e);
+                switch (e.key) {
+                    case 'w':
+                    case 'ArrowUp':
+                        data.dir[1] = 1;
+                        break;
+                    case 's':
+                    case 'ArrowDown':
+                        data.dir[1] = -1;
+                        break;
+                    case 'a':
+                    case 'ArrowLeft':
+                        data.dir[0] = -1;
+                        break;
+                    case 'd':
+                    case 'ArrowRight':
+                        data.dir[0] = 1;
+                        break;
+                    default: return;
+                }
+                e.preventDefault();
+            });
+            canvas.addEventListener('keyup', e => {
+                switch (e.key) {
+                    case 'w':
+                    case 'ArrowUp':
+                    case 's':
+                    case 'ArrowDown':
+                        data.dir[1] = 0;
+                        break;
+                    case 'a':
+                    case 'ArrowLeft':
+                    case 'd':
+                    case 'ArrowRight':
+                        data.dir[0] = 0;
+                        break;
+                    default: return;
+                }
+                e.preventDefault();
+            });
+
+            canvas.addEventListener('mousemove', e => {
+                const bb = canvas.getBoundingClientRect();
+                const x = (e.clientX - bb.left) / bb.width;
+                const y = (e.clientY - bb.top) / bb.height;
+
+                data.mousePos = [x, y];
+            });
+
+            pane.addInput(data, "t", { min: 14, max: 25 });
+            // pane.addMonitor(data, "t");
+            // pane.addInput(data, "speed_factor", { min: 0.01, max: 0.2, step: 0.01, });
+
+            return data;
+        },
+        (data, f) => {
+
+            f(data.ctx, data.t, data.dir[0], data.dir[1]);
+        },
+        (data, t) => {
+            data.t = t;
+        },
+    ).create("Roads2");
 }
 
 function stars(x: HTMLElement) {
@@ -159,7 +288,7 @@ init().then(() => {
         const sample = ((x as HTMLElement).dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
             case Sample.Roads:
-                roads(x as HTMLElement);
+                roads2(x as HTMLElement);
                 break;
             case Sample.Stars:
                 stars(x as HTMLElement);
