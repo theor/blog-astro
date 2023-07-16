@@ -1,5 +1,5 @@
 ---
-title: "Lorem Ipsum"
+title: "Demo effects using Rust and WebAssembly"
 author: "theor"
 type: "post"
 pubDate: 2023-04-15T15:43:14.015Z
@@ -11,25 +11,67 @@ setup: |
 ---
 import Run from "./_Run.astro"
 
-<Run data-sample="Roads" height="1024px" />
+I needed a reason to play with rust+wasm, and I have always loved the demoscene and its clever pixel manipulation. I also wanted the result to be embeddable here on my blog made with Astro. Guess who's about to fill buffers with fire, plasma, stars and roads.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin vitae convallis magna. Nunc vitae pellentesque justo, eget accumsan quam. Integer a rutrum tellus. Vivamus placerat condimentum nisl, et scelerisque ante vulputate eget. Phasellus pharetra dui at dignissim accumsan. Pellentesque non leo ipsum. Proin eget elit sagittis, luctus massa et, tempor nulla. Sed tempor lacus quam, vitae porta nisi lobortis sed. Vestibulum lacinia fermentum luctus. Suspendisse a tortor id purus suscipit tincidunt. Curabitur venenatis metus vel sollicitudin vestibulum. Curabitur id ligula id neque sagittis consequat at quis sem. Nullam nisl sem, porta id metus ac, facilisis ultrices lectus.
+# Rust, Wasm bootstrap
 
-<Run data-sample="Stars" height="1024px" />
+The rust community has spent much time making WebAssembly a functional and efficient target, and it shows. First, the `rustc` compiler has [multiple targets](https://rustwasm.github.io/wasm-bindgen/reference/rust-targets.html) for it: we'll use the seemingly undecided `wasm32-unknown-unknown` target. The workflow that worked for me uses [wasm-pack](https://rustwasm.github.io/docs/wasm-pack/), which, in one command, handles the compilation using `cargo`, the wasm optimization/stripping using `wasm-opt` and generates the .js/.ts glue code.
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin vitae convallis magna. Nunc vitae pellentesque justo, eget accumsan quam. Integer a rutrum tellus. Vivamus placerat condimentum nisl, et scelerisque ante vulputate eget. Phasellus pharetra dui at dignissim accumsan. Pellentesque non leo ipsum. Proin eget elit sagittis, luctus massa et, tempor nulla. Sed tempor lacus quam, vitae porta nisi lobortis sed. Vestibulum lacinia fermentum luctus. Suspendisse a tortor id purus suscipit tincidunt. Curabitur venenatis metus vel sollicitudin vestibulum. Curabitur id ligula id neque sagittis consequat at quis sem. Nullam nisl sem, porta id metus ac, facilisis ultrices lectus.
+I also discovered the lovely [cargo watch](https://crates.io/crates/cargo-watch) to monitor my rust folder and compile in on change, using this command:
+```sh
+cargo watch -s "wasm-pack build --profiling --target web -d blog-astro/src/content/blog/lorem-ipsum/_pkg --no-typescript --no-pack"
+```
+
+About arguments:
+- I use `--profiling` to get function names when profiling in Chrome. Never used `--debug` ; I don't know if I got too much in the oldskool mindset, but I didn't even searched how to attach a debugger with WASM, or if it is even possible
+- `--target web` outputs wasm ready for the browser. Didn't get `--target bundler` to work with Astro
+- I did write my glue code in Typescript, but the ts typings that wasm-build outputs made Astro choke on a const with no value
+- `--no-pack` prevents the generation of a `package.json` file, which IIUC is used when publishing npm packages. It also made Astro choke
+
+The resulting .js files exports an `init` promise loading the actual wasm, and everything exported by the rust code.
+
+Rust exports are made using `wasm-bindgen` :
+
+```rust
+#[wasm_bindgen]
+pub struct Plasma { /* ... */ }
+
+#[wasm_bindgen]
+impl Plasma {
+    #[wasm_bindgen(constructor)]
+    pub fn new(w: usize, h: usize) -> Self { /* ... */ }
+
+    pub fn update(&mut self,t: f32) { /* ... */ }
+}
+```
+
+
+```ts
+import init, { Plasma, StatefulFire, Stars, Roads2,  } from "./_pkg/sample_rust";
+
+await init();
+const p = new Plasma(WIDTH, HEIGHT);
+p.update(time);
+```
+
+I added controls using [TweakPane](https://cocopon.github.io/tweakpane/), a great js lib for controls à la datgui/imgui. Then it's just a matter of filling an HTML Canvas using rust code - more on that in the [Wasm interop optimization section](#todays-rabbit-hole--wasm-interop-optimization)
+
+# Plasma effect
 
 <Run data-sample="Plasma" />
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin vitae convallis magna. Nunc vitae pellentesque justo, eget accumsan quam. Integer a rutrum tellus. Vivamus placerat condimentum nisl, et scelerisque ante vulputate eget. Phasellus pharetra dui at dignissim accumsan. Pellentesque non leo ipsum. Proin eget elit sagittis, luctus massa et, tempor nulla. Sed tempor lacus quam, vitae porta nisi lobortis sed. Vestibulum lacinia fermentum luctus. Suspendisse a tortor id purus suscipit tincidunt. Curabitur venenatis metus vel sollicitudin vestibulum. Curabitur id ligula id neque sagittis consequat at quis sem. Nullam nisl sem, porta id metus ac, facilisis ultrices lectus.
+# Fire effect
 
 <Run id="asd3" data-sample="firestate" data-message="wwwww"/>
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin vitae convallis magna. Nunc vitae pellentesque justo, eget accumsan quam. Integer a rutrum tellus. Vivamus placerat condimentum nisl, et scelerisque ante vulputate eget. Phasellus pharetra dui at dignissim accumsan. Pellentesque non leo ipsum. Proin eget elit sagittis, luctus massa et, tempor nulla. Sed tempor lacus quam, vitae porta nisi lobortis sed. Vestibulum lacinia fermentum luctus. Suspendisse a tortor id purus suscipit tincidunt. Curabitur venenatis metus vel sollicitudin vestibulum. Curabitur id ligula id neque sagittis consequat at quis sem. Nullam nisl sem, porta id metus ac, facilisis ultrices lectus.
-# Title
+# Stars
 
-ipsum
- 
+<Run data-sample="Stars" height="480" />
 
-asdasd
+# Outrun 3d roads
 
+<Run data-sample="Roads" height="800"/>
+
+# Today's rabbit hole : Wasm interop optimization
+
+# Another rabbit hole : macros and reflection 

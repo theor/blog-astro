@@ -15,8 +15,8 @@ enum Sample {
 
 }
 function roads2(x: HTMLElement, memory: any) {
-    const WIDTH = 2 * 640;
-    const HEIGHT = 2 * 480;
+    const WIDTH = 640;
+    const HEIGHT = 480;
     // 2: 2.56ms self 1.39ms
     // 1: 3.59
     const p = new Roads2(WIDTH, HEIGHT);
@@ -113,8 +113,8 @@ function roads2(x: HTMLElement, memory: any) {
 }
 
 function stars(x: HTMLElement) {
-    const WIDTH = 512 * 2;
-    const HEIGHT = 512 * 2;
+    const WIDTH = 512;
+    const HEIGHT = 512;
     const p = new Stars(WIDTH, HEIGHT);
     new WasmHost(
         x,
