@@ -42,6 +42,7 @@ export class WasmHost<T, TD>  {
     f: T;
     pane?: Pane;
     div: HTMLElement;
+    data?: TD;
 
     onChange: (data: any, f: T) => any;
     onCreate: (div: HTMLElement, pane: Pane) => any;
@@ -68,8 +69,16 @@ export class WasmHost<T, TD>  {
 
         new IntersectionObserver((entries, observer) => {
             entries.forEach(async entry => {
+                // console.log(entry);
                 if (entry.isIntersecting) {
-                    console.log(entry);
+
+                    if(this.pane)
+                    {
+
+                        if(this.onUpdate && this.data)
+                        (this.data as any).paused = false;
+                        return;
+                    }
 
                     this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: name });
 
@@ -89,6 +98,7 @@ export class WasmHost<T, TD>  {
                     }
 
                     const data = await this.onCreate(this.div.querySelector("#content")!, this.pane);
+                    this.data = data;
 
                     this.pane.on('change', (ev) => {
                         // console.log('changed: ' + JSON.stringify(ev.value), data);
@@ -119,10 +129,15 @@ export class WasmHost<T, TD>  {
 
                         this.onChange(data, this.f)
                     }
-                    observer.disconnect();
+                    // observer.disconnect();
+                } else {
+                    console.log("pause", this);
+                    if(this.onUpdate && this.data)
+                        (this.data as any).paused = true;
+                    this.pane?.refresh();
                 }
             });
-        }, { threshold: 0.4 }).observe(this.div);
+        }, { threshold: [0] }).observe(this.div);
 
 
     }
