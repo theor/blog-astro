@@ -33,8 +33,9 @@ function roads2(x: HTMLElement, memory: any) {
             canvas.tabIndex = 0;
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
-            canvas.style.width = `${WIDTH}px`;
-            canvas.style.height = `${HEIGHT}px`;
+            canvas.style.width ="100%" ;
+            // canvas.style.width = `${WIDTH}px`;
+            // canvas.style.height = `${HEIGHT}px`;
             div.appendChild(canvas);
 
 
@@ -125,8 +126,9 @@ function stars(x: HTMLElement) {
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
-            canvas.style.width = `${WIDTH}px`;
-            canvas.style.height = `${HEIGHT}px`;
+            canvas.style.width ="100%" ;
+            // canvas.style.width = `${WIDTH}px`;
+            // canvas.style.height = `${HEIGHT}px`;
             div.appendChild(canvas);
 
             const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
@@ -177,6 +179,7 @@ function plasma(x: HTMLElement) {
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
+            canvas.style.width ="100%" ;
             // canvas.style.width = `${WIDTH * 4}px`;
             // canvas.style.height = `${HEIGHT * 4}px`;
             div.appendChild(canvas);
@@ -238,8 +241,9 @@ init().then(wasm => {
                         const canvas = document.createElement("canvas");
                         canvas.width = WIDTH;
                         canvas.height = HEIGHT;
-                        canvas.style.width = `${WIDTH * 4}px`;
-                        canvas.style.height = `${HEIGHT * 4}px`;
+                        canvas.style.width ="100%" ;
+                        // canvas.style.width = `${WIDTH * 4}px`;
+                        // canvas.style.height = `${HEIGHT * 4}px`;
                         div.appendChild(canvas);
 
                         const arrayBuffer = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
