@@ -1,6 +1,7 @@
-import init, { Plasma, StatefulFire, Stars, Roads2,  } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, Stars, Roads2, } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 import memory from './_pkg/sample_rust';
+import type { FpsGraphBladeApi } from "@tweakpane/plugin-essentials";
 
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
@@ -22,7 +23,7 @@ function roads2(x: HTMLElement, memory: any) {
     const p = new Roads2(WIDTH, HEIGHT);
     const ptr = p.get_ptr();
     // wAsm
-    const buffer = new ImageData(new Uint8ClampedArray(memory.buffer, ptr, WIDTH*HEIGHT*4), WIDTH, HEIGHT);
+    const buffer = new ImageData(new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4), WIDTH, HEIGHT);
     new WasmHost(
         x,
         p.update.bind(p),
@@ -165,6 +166,8 @@ function stars(x: HTMLElement) {
     ).create("Stars");
 }
 function plasma(x: HTMLElement) {
+    const WIDTH = 640;
+    const HEIGHT = 480;
     const p = new Plasma(WIDTH, HEIGHT);
     new WasmHost(
         x,
@@ -174,14 +177,15 @@ function plasma(x: HTMLElement) {
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
-            canvas.style.width = `${WIDTH * 4}px`;
-            canvas.style.height = `${HEIGHT * 4}px`;
+            // canvas.style.width = `${WIDTH * 4}px`;
+            // canvas.style.height = `${HEIGHT * 4}px`;
             div.appendChild(canvas);
-
 
             const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
 
-            const data = { t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!, };
+            
+            const data = { t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')! };
+            
             (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 1000 });
 
             return data;

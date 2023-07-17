@@ -11,7 +11,7 @@ setup: |
 ---
 import Run from "./_Run.astro"
 
-I needed a reason to play with rust+wasm, and I have always loved the demoscene and its clever pixel manipulation. I also wanted the result to be embeddable here on my blog made with Astro. Guess who's about to fill buffers with fire, plasma, stars and roads.
+I needed a reason to play with rust+wasm, and I have always loved the [demoscene](http://demoscene-the-art-of-coding.net/the-demoscene/) and its cleverness. I also wanted the result to be embeddable here on my blog made with Astro. Guess who's about to fill buffers with fire, plasma, stars and roads.
 
 # Rust, Wasm bootstrap
 
@@ -60,9 +60,74 @@ I added controls using [TweakPane](https://cocopon.github.io/tweakpane/), a grea
 
 <Run data-sample="Plasma" />
 
+The plasma effect is typical of demo effects: trivial to do today with a GPU, impressive when it was written on a CPU, often without a floating point unit.  Look at this Amstrad demo:
+
+<YouTube id="cEFDKup7il8"/>
+
+
+The gist of it is to compute a value for each pixel, then use it to index a palette. My attempt is inspired by [Nikos Papadopoulos and 4rknova Shadertoy](https://www.shadertoy.com/view/4tdGWX).
+
+```rust
+#[wasm_bindgen]
+pub struct Plasma {
+    w: usize,
+    h: usize,
+    palette: Vec<u32>,
+}
+
+#[wasm_bindgen]
+impl Plasma {
+    #[wasm_bindgen(constructor)]
+    pub fn new(w: usize, h: usize) -> Self {
+        let mut palette: Vec<u32> = vec![0; 256];
+        for i in 0..palette.len() {
+            let f = i as f32 / palette.len() as f32;
+            let c = Rgb::from(Hsl::from((
+                lerp(203.0..=31.0, f),
+                82.0,
+                ((f+0.5).powi(2)*100.0).clamp(10.0, 60.0)
+            )));
+            palette[i] = col32(
+                c.red().min(255.0) as u8,
+                c.green().min(255.0) as u8,
+                c.blue().min(255.0) as u8,
+            );
+        }
+
+        Self { w, h, palette }
+    }
+
+    pub fn update(&mut self, b: &mut [u32], time: f32) {
+
+        let a = vec2(self.w as f32 / self.h as f32, 1.0);
+        for y in 0..self.h {
+            for x in 0..self.w {
+                let fx = x as f32 / self.w as f32;
+                let fy = y as f32 / self.h as f32;
+
+                let c = vec2(fx, fy) * a * 8.0 + vec2(time * 0.3,time * 0.3);
+                let k = 0.1 + (c.y + (0.148 - time).sin()).cos() + 2.4 * time;
+                let w = 0.9 + (c.x + (0.628 + time).cos()).sin() - 0.7 * time;
+                let d = c.length();
+                let s = 7.0 * (d+w).cos() * (k+w).sin();
+                let i = y * self.w + x;
+                let cv = s + vec3(0.2, 0.5, 0.9);
+                b[i] = col32f(cv.x,cv.y, cv.z);
+                let c = self.palette[((s.cos() * 0.5 + 0.5) * 255.0) as usize % 256];
+                b[i] = c;
+            }
+        }
+    }
+}
+```
+
+An indexed palette used to be a requirement - the above Amstrad CPC had at best at 16 colors palette out of 27, in Mode 0 (160x200 pixels) before using any of the typical tricks of the time. The real bottleneck, however, is the massive amount of `sin/cos` calls. I tried to implement a precomputed look-up table for the trigonometry as [we used to](https://namoseley.wordpress.com/2015/07/26/sincos-generation-using-table-lookup-and-iterpolation/) but Rust's own trig is still twice as fast.
+
 # Fire effect
 
 <Run id="asd3" data-sample="firestate" data-message="wwwww"/>
+
+[Fabien Sanglard](https://fabiensanglard.net/doom_fire_psx/index.html)
 
 # Stars
 
@@ -71,6 +136,8 @@ I added controls using [TweakPane](https://cocopon.github.io/tweakpane/), a grea
 # Outrun 3d roads
 
 <Run data-sample="Roads" height="800"/>
+
+[Lou's pseudo 3d page](http://www.extentofthejam.com/pseudo/)
 
 # Today's rabbit hole : Wasm interop optimization
 

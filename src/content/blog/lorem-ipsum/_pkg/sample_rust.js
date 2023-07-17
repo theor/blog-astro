@@ -114,12 +114,12 @@ export class Plasma {
     }
     /**
     * @param {Uint32Array} b
-    * @param {number} t
+    * @param {number} time
     */
-    update(b, t) {
+    update(b, time) {
         var ptr0 = passArray32ToWasm0(b, wasm.__wbindgen_malloc);
         var len0 = WASM_VECTOR_LEN;
-        wasm.plasma_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), t);
+        wasm.plasma_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), time);
     }
 }
 /**
