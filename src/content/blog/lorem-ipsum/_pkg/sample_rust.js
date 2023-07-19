@@ -73,9 +73,9 @@ function getArrayU32FromWasm0(ptr, len) {
 
 let WASM_VECTOR_LEN = 0;
 
-function passArray32ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 4, 4) >>> 0;
-    getUint32Memory0().set(arg, ptr / 4);
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8Memory0().set(arg, ptr / 1);
     WASM_VECTOR_LEN = arg.length;
     return ptr;
 }
@@ -87,13 +87,6 @@ function addHeapObject(obj) {
 
     heap[idx] = obj;
     return idx;
-}
-
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1, 1) >>> 0;
-    getUint8Memory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
 }
 /**
 */
@@ -135,6 +128,13 @@ export class Plasma {
         return Plasma.__wrap(ret);
     }
     /**
+    * @returns {number}
+    */
+    get_ptr() {
+        const ret = wasm.plasma_get_ptr(this.__wbg_ptr);
+        return ret;
+    }
+    /**
     * @returns {Uint32Array}
     */
     get_palette() {
@@ -151,13 +151,10 @@ export class Plasma {
         }
     }
     /**
-    * @param {Uint32Array} b
     * @param {number} time
     */
-    update(b, time) {
-        var ptr0 = passArray32ToWasm0(b, wasm.__wbindgen_malloc);
-        var len0 = WASM_VECTOR_LEN;
-        wasm.plasma_update(this.__wbg_ptr, ptr0, len0, addHeapObject(b), time);
+    update(time) {
+        wasm.plasma_update(this.__wbg_ptr, time);
     }
 }
 /**

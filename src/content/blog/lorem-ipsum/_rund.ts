@@ -2,9 +2,11 @@ import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette, } from "./_pk
 import { WasmHost } from "@/wasmhost";
 import memory from './_pkg/sample_rust';
 import type { FpsGraphBladeApi } from "@tweakpane/plugin-essentials";
+import type { PlasmaInit, PlasmaMsg, PlasmaUpdate } from "./worker";
 
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
+
 
 enum Sample {
     Stars = "Stars",
@@ -15,7 +17,7 @@ enum Sample {
     Roads = "Roads",
 
 }
-function roads2(x: HTMLElement, memory: any) {
+function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     const WIDTH = 640;
     const HEIGHT = 480;
     // 2: 2.56ms self 1.39ms
@@ -33,7 +35,7 @@ function roads2(x: HTMLElement, memory: any) {
             canvas.tabIndex = 0;
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
-            canvas.style.width ="100%" ;
+            canvas.style.width = "100%";
             // canvas.style.width = `${WIDTH}px`;
             // canvas.style.height = `${HEIGHT}px`;
             div.appendChild(canvas);
@@ -126,7 +128,7 @@ function stars(x: HTMLElement) {
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
-            canvas.style.width ="100%" ;
+            canvas.style.width = "100%";
             // canvas.style.width = `${WIDTH}px`;
             // canvas.style.height = `${HEIGHT}px`;
             div.appendChild(canvas);
@@ -167,66 +169,72 @@ function stars(x: HTMLElement) {
         },
     ).create("Stars");
 }
-function plasma(x: HTMLElement,dataset: DOMStringMap) {
+
+function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memory) {
     const WIDTH = 320;
     const HEIGHT = 320;
     const step = dataset["step"] ?? "All";
     const pal = dataset["palette"] ?? "Colors";
     console.log(dataset);
-    const p = new Plasma(WIDTH, HEIGHT, Step[step], Palette[pal]);
+  
+    const worker = new Worker(new URL('./worker', import.meta.url), { type: 'module' });
+
+
+
     new WasmHost(
         x,
-        p.update.bind(p),
+        (t:number) => worker.postMessage(<PlasmaUpdate>{type:'u', time: t}),
+        // p.update.bind(p),
         async (div, pane) => {
 
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
-            canvas.style.width ="100%" ;
+            canvas.style.width = "100%";
             // canvas.style.width = `${WIDTH * 4}px`;
             // canvas.style.height = `${HEIGHT * 4}px`;
             div.appendChild(canvas);
-            
+
             const paletteCanvas = document.createElement("canvas");
             paletteCanvas.width = 256;
             paletteCanvas.height = 20;
-            paletteCanvas.style.width ="100%" ;
+            paletteCanvas.style.width = "100%";
             div.appendChild(paletteCanvas);
 
-            const palette = p.get_palette();
-            // console.log(palette);
-            const palCtx = paletteCanvas.getContext('2d');
-            const pw = paletteCanvas.width / palette.length;
-            for(let i = 0; i < palette.length; i++) {
-                const s = palette[i].toString(16).padStart(8, '0');
-                palCtx.fillStyle =  '#'+ s;
-                // console.log(palette[i], palette[i].toString(), s);
-                palCtx.fillRect(i*pw, 0, pw, 20);
-            }
+  
 
-            const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
+            const offscreenCanvas = canvas.transferControlToOffscreen();
+            const offscreenPaletteCanvas = paletteCanvas.transferControlToOffscreen();
 
-            
-            const data = { t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')! };
-            
-            if(pane)
+            const data = { t: 0, ctx: offscreenCanvas };
+
+            if (pane)
                 (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
+
+            worker.postMessage(<PlasmaInit> {
+                width: WIDTH,
+                height: HEIGHT,
+                type: "i",
+                canvas: data.ctx,
+                paletteCanvas: offscreenPaletteCanvas,
+                step: step,
+                palette: pal,
+            }, [data.ctx, offscreenPaletteCanvas]);
 
             return data;
         },
         (data, f) => {
-// console.log("ADDSSD", data)
-            const b = new ImageData(new Uint8ClampedArray(data.b.buffer), WIDTH, HEIGHT);
-
-            f(data.b, data.t);
-            data.ctx.putImageData(b, 0, 0);
+            // console.log("ADDSSD", data)
+            f(data.t);
+            // const msg: PlasmaUpdate = { type:"u", time: data.t};
+            // worker.postMessage(msg);
         },
         (data, t) => {
             // console.error("TTT")
             data.t = t;
             // (data as any).tInput.refresh()
         },
-    ).create("Plasma", {disablePane: dataset["disablepane"] === 'true', static: dataset["static"] === 'true'});
+    ).create("Plasma", { disablePane: dataset["disablepane"] === 'true', static: dataset["static"] === 'true' });
 }
 init().then(wasm => {
     console.log("init", wasm);
@@ -241,7 +249,7 @@ init().then(wasm => {
                 stars(elt);
                 break;
             case Sample.Plasma:
-                plasma(elt, elt.dataset);
+                plasma(elt, elt.dataset, wasm.memory);
                 break;
 
             case Sample.FireState:
@@ -264,7 +272,7 @@ init().then(wasm => {
                         const canvas = document.createElement("canvas");
                         canvas.width = WIDTH;
                         canvas.height = HEIGHT;
-                        canvas.style.width ="100%" ;
+                        canvas.style.width = "100%";
                         // canvas.style.width = `${WIDTH * 4}px`;
                         // canvas.style.height = `${HEIGHT * 4}px`;
                         div.appendChild(canvas);
