@@ -1,4 +1,4 @@
-import init, { Plasma, StatefulFire, Stars, Roads2, } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette, } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 import memory from './_pkg/sample_rust';
 import type { FpsGraphBladeApi } from "@tweakpane/plugin-essentials";
@@ -167,10 +167,13 @@ function stars(x: HTMLElement) {
         },
     ).create("Stars");
 }
-function plasma(x: HTMLElement) {
-    const WIDTH = 640;
-    const HEIGHT = 480;
-    const p = new Plasma(WIDTH, HEIGHT);
+function plasma(x: HTMLElement,dataset: DOMStringMap) {
+    const WIDTH = 320;
+    const HEIGHT = 320;
+    const step = dataset["step"] ?? "All";
+    const pal = dataset["palette"] ?? "Colors";
+    console.log(dataset);
+    const p = new Plasma(WIDTH, HEIGHT, Step[step], Palette[pal]);
     new WasmHost(
         x,
         p.update.bind(p),
@@ -183,42 +186,62 @@ function plasma(x: HTMLElement) {
             // canvas.style.width = `${WIDTH * 4}px`;
             // canvas.style.height = `${HEIGHT * 4}px`;
             div.appendChild(canvas);
+            
+            const paletteCanvas = document.createElement("canvas");
+            paletteCanvas.width = 256;
+            paletteCanvas.height = 20;
+            paletteCanvas.style.width ="100%" ;
+            div.appendChild(paletteCanvas);
+
+            const palette = p.get_palette();
+            // console.log(palette);
+            const palCtx = paletteCanvas.getContext('2d');
+            const pw = paletteCanvas.width / palette.length;
+            for(let i = 0; i < palette.length; i++) {
+                const s = palette[i].toString(16).padStart(8, '0');
+                palCtx.fillStyle =  '#'+ s;
+                // console.log(palette[i], palette[i].toString(), s);
+                palCtx.fillRect(i*pw, 0, pw, 20);
+            }
 
             const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
 
             
             const data = { t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')! };
             
-            (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 1000 });
+            if(pane)
+                (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
 
             return data;
         },
         (data, f) => {
-
+// console.log("ADDSSD", data)
             const b = new ImageData(new Uint8ClampedArray(data.b.buffer), WIDTH, HEIGHT);
 
             f(data.b, data.t);
             data.ctx.putImageData(b, 0, 0);
         },
         (data, t) => {
+            // console.error("TTT")
             data.t = t;
             // (data as any).tInput.refresh()
         },
-    ).create("Plasma");
+    ).create("Plasma", {disablePane: dataset["disablepane"] === 'true', static: dataset["static"] === 'true'});
 }
 init().then(wasm => {
     console.log("init", wasm);
     document.querySelectorAll("div[data-sample]").forEach(x => {
-        const sample = ((x as HTMLElement).dataset["sample"] ?? Sample.Fire) as Sample;
+        const elt = x as HTMLElement;
+        const sample = (elt.dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
             case Sample.Roads:
-                roads2(x as HTMLElement, wasm.memory);
+                roads2(elt, wasm.memory);
                 break;
             case Sample.Stars:
-                stars(x as HTMLElement);
+                stars(elt);
                 break;
             case Sample.Plasma:
-                plasma(x as HTMLElement);
+                plasma(elt, elt.dataset);
                 break;
 
             case Sample.FireState:
@@ -235,7 +258,7 @@ init().then(wasm => {
 
                 }
                 // sf.set_palette(palette);
-                new WasmHost(x as HTMLElement,
+                new WasmHost(elt,
                     sf.update.bind(sf),
                     (div, pane) => {
                         const canvas = document.createElement("canvas");

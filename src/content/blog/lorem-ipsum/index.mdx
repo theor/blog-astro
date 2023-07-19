@@ -54,18 +54,73 @@ const p = new Plasma(WIDTH, HEIGHT);
 p.update(time);
 ```
 
+
 I added controls using [TweakPane](https://cocopon.github.io/tweakpane/), a great js lib for controls à la datgui/imgui. Then it's just a matter of filling an HTML Canvas using rust code - more on that in the [Wasm interop optimization section](#todays-rabbit-hole--wasm-interop-optimization)
 
 # Plasma effect
-
 <Run data-sample="Plasma" />
-
-The plasma effect is typical of demo effects: trivial to do today with a GPU, impressive when it was written on a CPU, often without a floating point unit.  Look at this Amstrad demo:
+The plasma effect is typical of demo effects: trivial to do today with a GPU, impressive when it was written on a CPU, often without a floating point unit. Look at this Amstrad demo:
 
 <YouTube id="cEFDKup7il8"/>
 
 
-The gist of it is to compute a value for each pixel, then use it to index a palette. My attempt is inspired by [Nikos Papadopoulos and 4rknova Shadertoy](https://www.shadertoy.com/view/4tdGWX).
+The gist of it is to compute a color for each pixel using some combination of trigonometric functions ; usually, the function returns a valueused as an index in a pre-computed palette. An indexed palette used to be a requirement - the above Amstrad CPC had at best at 16 colors palette out of 27, in Mode 0 (160x200 pixels) before using any of the typical palette-expanding tricks of the time. However palette indexing is still more performant today, and gives other opportunities like [palette shifting (more details in my esp32/demoscene article)](/esp32-love-notes-demoscene/#tooling-for-palette-indexed-bitmaps).
+
+Let's start with simple concentric circles and a grey scale palette. The palette is a simple lerp outputting ABGR colors as `u32`, as the HTML canvas expects that format:
+
+```rust
+
+fn col32(r: u8, g: u8, b: u8) -> u32 {
+    255 << 24 | (b as u32) << 16 | (g as u32) << 8 | (r as u32)
+}
+
+const PALETTE_SIZE: usize = 256;
+let mut palette: Vec<u32> = vec![0; PALETTE_SIZE];
+
+for i in 0..PALETTE_SIZE {
+    let f = i as f32 / PALETTE_SIZE as f32;
+
+    // color_sys crate
+    let c = rgb(i as u8, i as u8, i as u8);
+    palette[i] = c;
+}
+```
+
+Next
+
+```rust
+for y in 0..self.h {
+    for x in 0..self.w {
+        // position as ratios, in the [0,1] range
+        let fx = x as f32 / (self.w - 1) as f32;
+        let fy = y as f32 / (self.h - 1) as f32;
+
+        // palette index
+        let v = (
+            vec2(fx - 0.5, fy - 0.5)
+            * 16.0
+        ).length().sin();
+
+        // buffer index
+        let i = y * self.w + x;
+        b[i] = self.palette[
+            remap(
+                v,
+                -1.0..=1.0,
+                0.0..=255.0)
+            as usize % 256];
+    }
+}
+```
+
+
+<Run data-sample="Plasma" data-static="true" data-step="FixedCircle" data-palette="Greyscale" data-disablepane="true"/>
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="Greyscale" />
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="GreyscaleLooped"/>
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="Colors"/>
+<Run data-sample="Plasma" data-step="Perturbation" data-palette="Colors"/>
+<Run data-sample="Plasma" data-palette="ColorsStepped"/>
+
 
 ```rust
 #[wasm_bindgen]
@@ -121,11 +176,14 @@ impl Plasma {
 }
 ```
 
-An indexed palette used to be a requirement - the above Amstrad CPC had at best at 16 colors palette out of 27, in Mode 0 (160x200 pixels) before using any of the typical tricks of the time. The real bottleneck, however, is the massive amount of `sin/cos` calls. I tried to implement a precomputed look-up table for the trigonometry as [we used to](https://namoseley.wordpress.com/2015/07/26/sincos-generation-using-table-lookup-and-iterpolation/) but Rust's own trig is still twice as fast.
+
+The real bottleneck, however, is the massive amount of `sin/cos` calls. I tried to implement a precomputed look-up table for the trigonometry as [we used to](https://namoseley.wordpress.com/2015/07/26/sincos-generation-using-table-lookup-and-iterpolation/) but Rust's own trig is still twice as fast. Maybe I'll investigate, there's a potential article here...
 
 # Fire effect
 
 <Run id="asd3" data-sample="firestate" data-message="wwwww"/>
+
+
 
 [Fabien Sanglard](https://fabiensanglard.net/doom_fire_psx/index.html)
 

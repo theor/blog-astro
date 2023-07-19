@@ -53,7 +53,8 @@ export class WasmHost<T, TD>  {
         f: T,
         onCreate: (div: HTMLElement, pane: Pane) => Promise<TD>,
         onChange: (data: TD, f: T) => any,
-        onUpdate?: (data: TD, t: number) => void) {
+        onUpdate?: (data: TD, t: number) => void,
+    ) {
         // super();
         this.div = div;
         this.f = f;
@@ -62,7 +63,7 @@ export class WasmHost<T, TD>  {
         this.onUpdate = onUpdate;
     }
 
-    async create(name: string) {
+    async create(name: string, options?: { static: boolean, disablePane: boolean }) {
         const tpl = wasm_template.content.cloneNode(true);
         this.div.appendChild(tpl);
 
@@ -72,53 +73,60 @@ export class WasmHost<T, TD>  {
                 // console.log(entry);
                 if (entry.isIntersecting) {
 
-                    if(this.pane)
-                    {
+                    if (this.pane) {
 
-                        if(this.onUpdate && this.data)
-                        (this.data as any).paused = false;
+                        if (this.onUpdate && this.data)
+                            (this.data as any).paused = false;
                         return;
                     }
 
-                    this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: name });
+                    let fpsGraph: FpsGraphBladeApi;
+                    console.log(options);
+                    if (!options?.disablePane) {
+                        this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: name });
+                        this.pane.registerPlugin(EssentialsPlugin);
+                        this.pane.on('change', (ev) => {
+                            console.log('changed: ',ev, this.data);
+                            // data.result = this.f(...Object.values(this.mapData(data)));
+                            this.onChange(data, this.f)
+                        });
 
-                    this.pane.registerPlugin(EssentialsPlugin);
+                        if (this.onUpdate) {
+                            fpsGraph = this.pane.addBlade({
+                                view: 'fpsgraph',
 
+                                label: 'fpsgraph',
+                                lineCount: 2,
+                            }) as FpsGraphBladeApi;
+                        }
+                    }
                     const pane = this.pane;
 
 
-                    let fpsGraph: FpsGraphBladeApi;
-                    if (this.onUpdate) {
-                        fpsGraph = pane.addBlade({
-                            view: 'fpsgraph',
-
-                            label: 'fpsgraph',
-                            lineCount: 2,
-                        }) as FpsGraphBladeApi;
-                    }
-
-                    const data = await this.onCreate(this.div.querySelector("#content")!, this.pane);
+                    const data = Object.assign(await this.onCreate(this.div.querySelector("#content")!, this.pane), options);
+                    
                     this.data = data;
+                    console.warn(data)
 
-                    this.pane.on('change', (ev) => {
-                        // console.log('changed: ' + JSON.stringify(ev.value), data);
-                        // data.result = this.f(...Object.values(this.mapData(data)));
-                        this.onChange(data, this.f)
-                    });
+                    let first = true;
 
                     let prev_t = 0;
                     if (this.onUpdate) {
-                        (data as any).paused = false;
-                        pane.addInput(data, "paused");
+                        if ((data as any).paused === undefined)
+                            (data as any).paused = false;
+                        if (pane && !data.static)
+                            pane.addInput(data, "paused");
                         const update = (t: DOMHighResTimeStamp) => {
                             if (t - prev_t > 16) {
                                 prev_t = t;
-                                // console.log(t)
-                                if (!data.paused) {
+                                if (!data.paused && (first || !data.static)) {
+                                    // console.log("update")
                                     this.onUpdate!(data, t / 1000.0);
-                                    fpsGraph.begin();
+                                    
+                                    fpsGraph?.begin();
                                     this.onChange(data, this.f);
-                                    fpsGraph.end();
+                                    fpsGraph?.end();
+                                    first = false;
                                 }
                             }
                             requestAnimationFrame(update);
@@ -132,7 +140,7 @@ export class WasmHost<T, TD>  {
                     // observer.disconnect();
                 } else {
                     console.log("pause", this);
-                    if(this.onUpdate && this.data)
+                    if (this.onUpdate && this.data)
                         (this.data as any).paused = true;
                     this.pane?.refresh();
                 }

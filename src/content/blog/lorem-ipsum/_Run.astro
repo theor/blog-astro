@@ -1,5 +1,5 @@
 ---
-const { height = "300px" } = Astro.props;
+const { height = "300px", title = "" } = Astro.props;
 ---
 
 <script>
@@ -10,4 +10,6 @@ const { height = "300px" } = Astro.props;
         min-height: var(--wasmheight);
     }
 </style>
-<div {...Astro.props}></div>
+<div {...Astro.props}>
+{title}
+</div>
