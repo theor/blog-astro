@@ -230,7 +230,7 @@ for i in 0..PALETTE_SIZE {
     ))).into())
 }
 ```
-<Run data-sample="Plasma" data-palette="ColorsStepped"/>
+<Run data-sample="Plasma" data-palette="RainbowStepped"/>
 
 
 The real bottleneck, is the massive amount of `sin/cos` calls. I tried to implement a precomputed look-up table for the trigonometry as [we used to](https://namoseley.wordpress.com/2015/07/26/sincos-generation-using-table-lookup-and-iterpolation/) but Rust's own trig is still twice as fast. Maybe I'll investigate, there's a potential article here...

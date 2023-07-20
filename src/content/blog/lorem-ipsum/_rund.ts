@@ -2,7 +2,7 @@ import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette, } from "./_pk
 import { WasmHost } from "@/wasmhost";
 import memory from './_pkg/sample_rust';
 import type { FpsGraphBladeApi } from "@tweakpane/plugin-essentials";
-import type { PlasmaInit, PlasmaMsg, PlasmaUpdate } from "./worker";
+import type { PlasmaInit, PlasmaMsg, PlasmaPalette, PlasmaUpdate } from "./worker";
 
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
@@ -208,10 +208,21 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
             const offscreenCanvas = canvas.transferControlToOffscreen();
             const offscreenPaletteCanvas = paletteCanvas.transferControlToOffscreen();
 
-            const data = { t: 0, ctx: offscreenCanvas };
+            const data = { t: 0, ctx: offscreenCanvas, palette:Palette[pal] };
 
             if (pane)
-                (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
+                {
+                    (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
+                    pane.addInput(data, "palette", {
+                        options: {... Object.keys(Palette).filter(k => isNaN(Number(k))).reduce((p,k) => Object.assign(p, {[k]:Palette[k]}), {}) }
+                    }).on('change', e => {
+                        console.error(e.value)
+                        worker.postMessage(<PlasmaPalette>{
+                            type:"p",
+                            palette: Number(e.value),
+                        })
+                    });
+                }
 
             worker.postMessage(<PlasmaInit>{
                 width: WIDTH,

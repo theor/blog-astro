@@ -93,7 +93,7 @@ function addHeapObject(obj) {
 export const Step = Object.freeze({ FixedCircle:0,"0":"FixedCircle",ShiftedCircle:1,"1":"ShiftedCircle",Perturbation:2,"2":"Perturbation",All:3,"3":"All", });
 /**
 */
-export const Palette = Object.freeze({ Greyscale:0,"0":"Greyscale",GreyscaleLooped:1,"1":"GreyscaleLooped",Colors:2,"2":"Colors",ColorsStepped:3,"3":"ColorsStepped", });
+export const Palette = Object.freeze({ Greyscale:0,"0":"Greyscale",GreyscaleLooped:1,"1":"GreyscaleLooped",Colors:2,"2":"Colors",ColorsStepped:3,"3":"ColorsStepped",Rainbow:4,"4":"Rainbow",RainbowStepped:5,"5":"RainbowStepped", });
 /**
 */
 export class Plasma {
@@ -126,6 +126,12 @@ export class Plasma {
     constructor(w, h, step, pal) {
         const ret = wasm.plasma_new(w, h, step, pal);
         return Plasma.__wrap(ret);
+    }
+    /**
+    * @param {number} pal
+    */
+    set_palette(pal) {
+        wasm.plasma_set_palette(this.__wbg_ptr, pal);
     }
     /**
     * @returns {number}
