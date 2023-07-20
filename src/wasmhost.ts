@@ -48,15 +48,15 @@ export class WasmHost<T, TD>  {
     div: HTMLElement;
     data?: TD;
 
-    onCreate: (div: HTMLElement, pane: Pane, host: WasmHost<T, TD>) => Promise<TD>;
-    onChange: (data: any, f: T, host: WasmHost<T, TD>) => void;
+    onCreate: (div: HTMLElement, pane: Pane) => Promise<TD>;
+    onChange: (data: any, f: T) => void;
     onUpdate?: (data: TD, t: number) => void;
 
     constructor(
         div: HTMLElement,
         f: T,
-        onCreate: (div: HTMLElement, pane: Pane, host: WasmHost<T, TD>) => Promise<TD>,
-        onChange: (data: TD, f: T, host: WasmHost<T, TD>) => void,
+        onCreate: (div: HTMLElement, pane: Pane) => Promise<TD>,
+        onChange: (data: TD, f: T) => void,
         onUpdate?: (data: TD, t: number) => void,
     ) {
         // super();
@@ -93,7 +93,7 @@ export class WasmHost<T, TD>  {
                         this.pane.on('change', (ev) => {
                             // console.log('changed: ', ev, this.data);
                             // data.result = this.f(...Object.values(this.mapData(data)));
-                            this.onChange(data, this.f, this)
+                            this.onChange(data, this.f)
                         });
 
                         if (this.onUpdate) {
@@ -108,7 +108,7 @@ export class WasmHost<T, TD>  {
                     const pane = this.pane;
 
 
-                    const data = Object.assign(await this.onCreate(this.div.querySelector("#content")!, this.pane, this), options);
+                    const data = Object.assign(await this.onCreate(this.div.querySelector("#content")!, this.pane), options);
 
                     this.data = data;
                     // console.warn(data)
@@ -129,7 +129,7 @@ export class WasmHost<T, TD>  {
                                     this.onUpdate!(data, t / 1000.0);
 
                                     fpsGraph?.begin();
-                                    this.onChange(data, this.f, this);
+                                    this.onChange(data, this.f);
                                     fpsGraph?.end();
                                     first = false;
                                 }
@@ -140,7 +140,7 @@ export class WasmHost<T, TD>  {
                         requestAnimationFrame(update);
                     } else {
 
-                        this.onChange(data, this.f, this)
+                        this.onChange(data, this.f)
                     }
                     // observer.disconnect();
                 } else {

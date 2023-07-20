@@ -167,7 +167,7 @@ function stars(x: HTMLElement) {
     ).create("Stars");
 }
 
-function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memory) {
+async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memory) {
     const WIDTH = 160;
     const HEIGHT = 160;
     const step = dataset["step"] ?? "All";
@@ -177,15 +177,29 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
     const p = new Plasma(WIDTH, HEIGHT, Step[step], Palette[pal]);
     // const worker = new Worker(new URL('./worker', import.meta.url), { type: 'module' });
 
-    const ptr = p.get_ptr();
-            // wAsm
-    const buffer = new ImageData(new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4), WIDTH, HEIGHT);
 
-    new WasmHost(
+    await new WasmHost(
         x,
         p.update.bind(p),
         // p.update.bind(p),
-        async (div, pane, host) => {
+        async (div, pane) => {
+
+            const ptr = p.get_ptr();
+            // wAsm
+            console.log(memory.buffer)
+            let raw_buffer = new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4);
+
+
+            // await new Promise<void>((resolve, reject) => {
+                // while(raw_buffer.byteLength === 0) {
+                    // raw_buffer = new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4);
+
+                // }
+                // resolve();
+            // });
+
+            const buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
+            console.log(ptr, buffer, raw_buffer)
 
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
@@ -201,16 +215,16 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
             paletteCanvas.style.width = "100%";
             div.appendChild(paletteCanvas);
 
-            function drawPalette(){
+            function drawPalette() {
                 const palette = p.get_palette();
                 // console.log(palette);
                 const palCtx = paletteCanvas.getContext('2d')!;
                 const pw = paletteCanvas.width / palette.length;
-                for(let i = 0; i < palette.length; i++) {
+                for (let i = 0; i < palette.length; i++) {
                     const s = palette[i].toString(16).padStart(8, '0');
-                    palCtx.fillStyle =  '#'+ s;
+                    palCtx.fillStyle = '#' + s;
                     // console.log(palette[i], palette[i].toString(), s);
-                    palCtx.fillRect(i*pw, 0, pw, 20);
+                    palCtx.fillRect(i * pw, 0, pw, 20);
                 }
             }
 
@@ -218,29 +232,32 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
 
 
 
-            const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
 
-            const data = { t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!, palette:Palette[pal],  };
+            const data = { buffer: buffer, t: 0, ctx: canvas.getContext('2d')!, palette: Palette[pal], };
 
-            if (pane)
-                {
-                    (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
-                    pane.addInput(data, "palette", {
-                        options: {... Object.keys(Palette).filter(k => isNaN(Number(k))).reduce((p,k) => Object.assign(p, {[k]:Palette[k]}), {}) }
-                    }).on('change', e => {
-                            const palette = Number(e.value);
-                            p.set_palette(palette);
-                            drawPalette();
-                    });
-                }
+            if (pane) {
+                (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
+                pane.addInput(data, "palette", {
+                    options: { ...Object.keys(Palette).filter(k => isNaN(Number(k))).reduce((p, k) => Object.assign(p, { [k]: Palette[k] }), {}) }
+                }).on('change', e => {
+                    const palette = Number(e.value);
+                    p.set_palette(palette);
+                    drawPalette();
+                });
+            }
 
-            
+
             return data;
         },
-        (data, f, host) => {
-            // console.log("ADDSSD", data)
+        (data, f) => {
+            // console.log("ADDSSD", data.buffer, data.ctx.canvas)
             f(data.t);
-            data.ctx.putImageData(buffer, 0, 0);
+
+            const ptr = p.get_ptr();
+            let raw_buffer = new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4);
+            const buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
+
+            data.ctx.putImageData(buffer, 0, 0, 0, 0, data.ctx.canvas.width, data.ctx.canvas.height);
 
             // const msg: PlasmaUpdate = { type:"u", time: data.t};
             // worker.postMessage(msg);
@@ -252,9 +269,9 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
         },
     ).create("Plasma", { disablePane: dataset["disablepane"] === 'true', static: dataset["static"] === 'true' });
 }
-init().then(wasm => {
+init().then(async wasm => {
     console.log("init", wasm);
-    document.querySelectorAll("div[data-sample]").forEach(x => {
+    for(let x of document.querySelectorAll("div[data-sample]")){
         const elt = x as HTMLElement;
         const sample = (elt.dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
@@ -265,7 +282,7 @@ init().then(wasm => {
                 stars(elt);
                 break;
             case Sample.Plasma:
-                plasma(elt, elt.dataset, wasm.memory);
+                await plasma(elt, elt.dataset, wasm.memory);
                 break;
 
             case Sample.FireState:
@@ -347,6 +364,6 @@ init().then(wasm => {
                 x.innerHTML = "unknown";
                 break;
         }
-    });
+    };
 });
 // customElements.define("astro-greet", AstroGreet);
