@@ -47,7 +47,6 @@ export class WasmHost<T, TD>  {
     pane?: Pane;
     div: HTMLElement;
     data?: TD;
-    ready: boolean;
 
     onCreate: (div: HTMLElement, pane: Pane, host: WasmHost<T, TD>) => Promise<TD>;
     onChange: (data: any, f: T, host: WasmHost<T, TD>) => void;
@@ -66,7 +65,6 @@ export class WasmHost<T, TD>  {
         this.onCreate = onCreate;
         this.onChange = onChange;
         this.onUpdate = onUpdate;
-        this.ready = true;
     }
 
     async create(name: string, options?: { static: boolean, disablePane: boolean }) {
@@ -79,20 +77,21 @@ export class WasmHost<T, TD>  {
                 // console.log(entry);
                 if (entry.isIntersecting) {
 
-                    if (this.pane) {
+                    if (entry.target.hasAttribute("data-created")) {
 
                         if (this.onUpdate && this.data)
                             (this.data as any).paused = false;
                         return;
                     }
 
+                    entry.target.setAttribute("data-created", '');
                     let fpsGraph: FpsGraphBladeApi;
-                    console.log(options);
+                    // console.log(options);
                     if (!options?.disablePane) {
                         this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: name });
                         this.pane.registerPlugin(EssentialsPlugin);
                         this.pane.on('change', (ev) => {
-                            console.log('changed: ', ev, this.data);
+                            // console.log('changed: ', ev, this.data);
                             // data.result = this.f(...Object.values(this.mapData(data)));
                             this.onChange(data, this.f, this)
                         });
@@ -112,7 +111,7 @@ export class WasmHost<T, TD>  {
                     const data = Object.assign(await this.onCreate(this.div.querySelector("#content")!, this.pane, this), options);
 
                     this.data = data;
-                    console.warn(data)
+                    // console.warn(data)
 
                     let first = true;
 
@@ -129,11 +128,9 @@ export class WasmHost<T, TD>  {
                                     // console.log("update")
                                     this.onUpdate!(data, t / 1000.0);
 
-                                    if (this.ready) {
-                                        fpsGraph?.begin();
-                                        this.onChange(data, this.f, this);
-                                        fpsGraph?.end();
-                                    }
+                                    fpsGraph?.begin();
+                                    this.onChange(data, this.f, this);
+                                    fpsGraph?.end();
                                     first = false;
                                 }
                             }
@@ -147,7 +144,7 @@ export class WasmHost<T, TD>  {
                     }
                     // observer.disconnect();
                 } else {
-                    console.log("pause", this);
+                    // console.log("pause", this);
                     if (this.onUpdate && this.data)
                         (this.data as any).paused = true;
                     this.pane?.refresh();

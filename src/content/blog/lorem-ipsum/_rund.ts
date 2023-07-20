@@ -1,8 +1,5 @@
 import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette, } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
-import memory from './_pkg/sample_rust';
-import type { FpsGraphBladeApi } from "@tweakpane/plugin-essentials";
-import type { PlasmaInit, PlasmaMsg, PlasmaPalette, PlasmaUpdate } from "./worker";
 
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
@@ -175,19 +172,20 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
     const HEIGHT = 160;
     const step = dataset["step"] ?? "All";
     const pal = dataset["palette"] ?? "Colors";
-    console.log(dataset);
+    // console.log(dataset);
 
-    const worker = new Worker(new URL('./worker', import.meta.url), { type: 'module' });
+    const p = new Plasma(WIDTH, HEIGHT, Step[step], Palette[pal]);
+    // const worker = new Worker(new URL('./worker', import.meta.url), { type: 'module' });
 
+    const ptr = p.get_ptr();
+            // wAsm
+    const buffer = new ImageData(new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4), WIDTH, HEIGHT);
 
     new WasmHost(
         x,
-        (t: number) => {
-            worker.postMessage(<PlasmaUpdate>{ type: 'u', time: t });
-        },
+        p.update.bind(p),
         // p.update.bind(p),
         async (div, pane, host) => {
-            worker.onmessage = _ => host.ready = true;
 
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
@@ -203,12 +201,26 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
             paletteCanvas.style.width = "100%";
             div.appendChild(paletteCanvas);
 
+            function drawPalette(){
+                const palette = p.get_palette();
+                // console.log(palette);
+                const palCtx = paletteCanvas.getContext('2d')!;
+                const pw = paletteCanvas.width / palette.length;
+                for(let i = 0; i < palette.length; i++) {
+                    const s = palette[i].toString(16).padStart(8, '0');
+                    palCtx.fillStyle =  '#'+ s;
+                    // console.log(palette[i], palette[i].toString(), s);
+                    palCtx.fillRect(i*pw, 0, pw, 20);
+                }
+            }
+
+            drawPalette();
 
 
-            const offscreenCanvas = canvas.transferControlToOffscreen();
-            const offscreenPaletteCanvas = paletteCanvas.transferControlToOffscreen();
 
-            const data = { t: 0, ctx: offscreenCanvas, palette:Palette[pal] };
+            const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
+
+            const data = { t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!, palette:Palette[pal],  };
 
             if (pane)
                 {
@@ -216,29 +228,19 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
                     pane.addInput(data, "palette", {
                         options: {... Object.keys(Palette).filter(k => isNaN(Number(k))).reduce((p,k) => Object.assign(p, {[k]:Palette[k]}), {}) }
                     }).on('change', e => {
-                        console.error(e.value)
-                        worker.postMessage(<PlasmaPalette>{
-                            type:"p",
-                            palette: Number(e.value),
-                        })
+                            const palette = Number(e.value);
+                            p.set_palette(palette);
+                            drawPalette();
                     });
                 }
 
-            worker.postMessage(<PlasmaInit>{
-                width: WIDTH,
-                height: HEIGHT,
-                type: "i",
-                canvas: data.ctx,
-                paletteCanvas: offscreenPaletteCanvas,
-                step: step,
-                palette: pal,
-            }, [data.ctx, offscreenPaletteCanvas]);
-
+            
             return data;
         },
         (data, f, host) => {
             // console.log("ADDSSD", data)
             f(data.t);
+            data.ctx.putImageData(buffer, 0, 0);
 
             // const msg: PlasmaUpdate = { type:"u", time: data.t};
             // worker.postMessage(msg);
