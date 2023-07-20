@@ -19,11 +19,7 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     const HEIGHT = 480;
     // 2: 2.56ms self 1.39ms
     // 1: 3.59
-    const p = new Roads2(WIDTH, HEIGHT);
-    const ptr = p.get_ptr();
-    // wAsm
-    const buffer = new ImageData(new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4), WIDTH, HEIGHT);
-    new WasmHost(
+    const p = new Roads2(WIDTH, HEIGHT);new WasmHost(
         x,
         p.update.bind(p),
         async (div, pane) => {
@@ -43,7 +39,6 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
                 mousePos: [0, 0],
                 speed_factor: 0.06,
                 dir: [0, 1],
-                buffer: buffer,
             };
 
             canvas.addEventListener('keydown', e => {
@@ -105,7 +100,12 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
         (data, f) => {
 
             f(data.t, data.dir[0], data.dir[1]);
-            data.ctx.putImageData(data.buffer, 0, 0);
+            
+    const ptr = p.get_ptr();
+    // wAsm
+    const buffer = new ImageData(new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4), WIDTH, HEIGHT);
+    
+            data.ctx.putImageData(buffer, 0, 0);
         },
         (data, t) => {
             data.t = t;
@@ -185,8 +185,6 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
         async (div, pane) => {
 
             const ptr = p.get_ptr();
-            // wAsm
-            console.log(memory.buffer)
             let raw_buffer = new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4);
 
 
@@ -199,8 +197,6 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
             // });
 
             const buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
-            console.log(ptr, buffer, raw_buffer)
-
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
@@ -233,7 +229,7 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
 
 
 
-            const data = { buffer: buffer, t: 0, ctx: canvas.getContext('2d')!, palette: Palette[pal], };
+            const data = { t: 0, ctx: canvas.getContext('2d')!, palette: Palette[pal], };
 
             if (pane) {
                 (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
