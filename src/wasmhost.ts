@@ -31,6 +31,10 @@ canvas {
 .root > div {
     flex: 1;
 }
+
+#pane {
+    margin-left: 8px;
+}
 </style>
 <div class="root">
 <div id="content"></div>
