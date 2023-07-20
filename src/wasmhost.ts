@@ -52,6 +52,9 @@ export class WasmHost<T, TD>  {
     onChange: (data: any, f: T) => void;
     onUpdate?: (data: TD, t: number) => void;
 
+    private  first = true;
+    private prev_t = 0;
+
     constructor(
         div: HTMLElement,
         f: T,
@@ -67,12 +70,30 @@ export class WasmHost<T, TD>  {
         this.onUpdate = onUpdate;
     }
 
+    update(t: DOMHighResTimeStamp) {
+            if (t - this.prev_t > 33)
+             {
+                this.prev_t = t;
+                if (!this.data.paused && (this.first || !this.data.static)) {
+                    // console.log("update")
+                    this.onUpdate!(this.data, t / 1000.0);
+
+                    // fpsGraph?.begin();
+                    this.onChange(this.data, this.f);
+                    // fpsGraph?.end();
+                    this.first = false;
+                }
+            }
+            requestAnimationFrame(this.update.bind(this));
+
+    }
     async create(name: string, options?: { static: boolean, disablePane: boolean }) {
         const tpl = wasm_template.content.cloneNode(true);
         this.div.appendChild(tpl);
 
 
         new IntersectionObserver((entries, observer) => {
+            const self = this;
             entries.forEach(async entry => {
                 // console.log(entry);
                 if (entry.isIntersecting) {
@@ -85,7 +106,6 @@ export class WasmHost<T, TD>  {
                     }
 
                     entry.target.setAttribute("data-created", '');
-                    let fpsGraph: FpsGraphBladeApi;
                     // console.log(options);
                     if (!options?.disablePane) {
                         this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: name });
@@ -96,14 +116,7 @@ export class WasmHost<T, TD>  {
                             this.onChange(data, this.f)
                         });
 
-                        if (this.onUpdate) {
-                            fpsGraph = this.pane.addBlade({
-                                view: 'fpsgraph',
-
-                                label: 'fpsgraph',
-                                lineCount: 2,
-                            }) as FpsGraphBladeApi;
-                        }
+                       
                     }
                     const pane = this.pane;
 
@@ -113,31 +126,13 @@ export class WasmHost<T, TD>  {
                     this.data = data;
                     // console.warn(data)
 
-                    let first = true;
-
-                    let prev_t = 0;
                     if (this.onUpdate) {
                         if ((data as any).paused === undefined)
                             (data as any).paused = false;
                         if (pane && !data.static)
                             pane.addInput(data, "paused");
-                        const update = (t: DOMHighResTimeStamp) => {
-                            if (t - prev_t > 33) {
-                                prev_t = t;
-                                if (!data.paused && (first || !data.static)) {
-                                    // console.log("update")
-                                    this.onUpdate!(data, t / 1000.0);
-
-                                    fpsGraph?.begin();
-                                    this.onChange(data, this.f);
-                                    fpsGraph?.end();
-                                    first = false;
-                                }
-                            }
-                            requestAnimationFrame(update);
-                        }
-
-                        requestAnimationFrame(update);
+                        
+                        requestAnimationFrame(self.update.bind(self));
                     } else {
 
                         this.onChange(data, this.f)
