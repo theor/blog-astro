@@ -43,16 +43,17 @@ export class WasmHost<T, TD>  {
     pane?: Pane;
     div: HTMLElement;
     data?: TD;
+    ready: boolean;
 
-    onChange: (data: any, f: T) => any;
-    onCreate: (div: HTMLElement, pane: Pane) => any;
+    onCreate: (div: HTMLElement, pane: Pane, host: WasmHost<T, TD>) => Promise<TD>;
+    onChange: (data: any, f: T, host: WasmHost<T, TD>) => void;
     onUpdate?: (data: TD, t: number) => void;
 
     constructor(
         div: HTMLElement,
         f: T,
-        onCreate: (div: HTMLElement, pane: Pane) => Promise<TD>,
-        onChange: (data: TD, f: T) => any,
+        onCreate: (div: HTMLElement, pane: Pane, host: WasmHost<T, TD>) => Promise<TD>,
+        onChange: (data: TD, f: T, host: WasmHost<T, TD>) => void,
         onUpdate?: (data: TD, t: number) => void,
     ) {
         // super();
@@ -61,6 +62,7 @@ export class WasmHost<T, TD>  {
         this.onCreate = onCreate;
         this.onChange = onChange;
         this.onUpdate = onUpdate;
+        this.ready = true;
     }
 
     async create(name: string, options?: { static: boolean, disablePane: boolean }) {
@@ -86,9 +88,9 @@ export class WasmHost<T, TD>  {
                         this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: name });
                         this.pane.registerPlugin(EssentialsPlugin);
                         this.pane.on('change', (ev) => {
-                            console.log('changed: ',ev, this.data);
+                            console.log('changed: ', ev, this.data);
                             // data.result = this.f(...Object.values(this.mapData(data)));
-                            this.onChange(data, this.f)
+                            this.onChange(data, this.f, this)
                         });
 
                         if (this.onUpdate) {
@@ -103,8 +105,8 @@ export class WasmHost<T, TD>  {
                     const pane = this.pane;
 
 
-                    const data = Object.assign(await this.onCreate(this.div.querySelector("#content")!, this.pane), options);
-                    
+                    const data = Object.assign(await this.onCreate(this.div.querySelector("#content")!, this.pane, this), options);
+
                     this.data = data;
                     console.warn(data)
 
@@ -117,15 +119,17 @@ export class WasmHost<T, TD>  {
                         if (pane && !data.static)
                             pane.addInput(data, "paused");
                         const update = (t: DOMHighResTimeStamp) => {
-                            if (t - prev_t > 16) {
+                            if (t - prev_t > 33) {
                                 prev_t = t;
                                 if (!data.paused && (first || !data.static)) {
                                     // console.log("update")
                                     this.onUpdate!(data, t / 1000.0);
-                                    
-                                    fpsGraph?.begin();
-                                    this.onChange(data, this.f);
-                                    fpsGraph?.end();
+
+                                    if (this.ready) {
+                                        fpsGraph?.begin();
+                                        this.onChange(data, this.f, this);
+                                        fpsGraph?.end();
+                                    }
                                     first = false;
                                 }
                             }
@@ -135,7 +139,7 @@ export class WasmHost<T, TD>  {
                         requestAnimationFrame(update);
                     } else {
 
-                        this.onChange(data, this.f)
+                        this.onChange(data, this.f, this)
                     }
                     // observer.disconnect();
                 } else {

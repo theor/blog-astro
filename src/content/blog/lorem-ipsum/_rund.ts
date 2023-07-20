@@ -171,21 +171,23 @@ function stars(x: HTMLElement) {
 }
 
 function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memory) {
-    const WIDTH = 320;
-    const HEIGHT = 320;
+    const WIDTH = 160;
+    const HEIGHT = 160;
     const step = dataset["step"] ?? "All";
     const pal = dataset["palette"] ?? "Colors";
     console.log(dataset);
-  
-    const worker = new Worker(new URL('./worker', import.meta.url), { type: 'module' });
 
+    const worker = new Worker(new URL('./worker', import.meta.url), { type: 'module' });
 
 
     new WasmHost(
         x,
-        (t:number) => worker.postMessage(<PlasmaUpdate>{type:'u', time: t}),
+        (t: number) => {
+            worker.postMessage(<PlasmaUpdate>{ type: 'u', time: t });
+        },
         // p.update.bind(p),
-        async (div, pane) => {
+        async (div, pane, host) => {
+            worker.onmessage = _ => host.ready = true;
 
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
@@ -201,7 +203,7 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
             paletteCanvas.style.width = "100%";
             div.appendChild(paletteCanvas);
 
-  
+
 
             const offscreenCanvas = canvas.transferControlToOffscreen();
             const offscreenPaletteCanvas = paletteCanvas.transferControlToOffscreen();
@@ -211,7 +213,7 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
             if (pane)
                 (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
 
-            worker.postMessage(<PlasmaInit> {
+            worker.postMessage(<PlasmaInit>{
                 width: WIDTH,
                 height: HEIGHT,
                 type: "i",
@@ -223,15 +225,16 @@ function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memor
 
             return data;
         },
-        (data, f) => {
+        (data, f, host) => {
             // console.log("ADDSSD", data)
             f(data.t);
+
             // const msg: PlasmaUpdate = { type:"u", time: data.t};
             // worker.postMessage(msg);
         },
         (data, t) => {
             // console.error("TTT")
-            data.t = t;
+            data.t = t % 20;
             // (data as any).tInput.refresh()
         },
     ).create("Plasma", { disablePane: dataset["disablepane"] === 'true', static: dataset["static"] === 'true' });
@@ -316,7 +319,7 @@ init().then(wasm => {
                         sf.circle(data.mousePos[0], data.mousePos[1], data.r);
 
 
-                        f(data.t, data.b, data.attenuation, data.x.min, data.x.max);
+                        f(data.t, new Uint8Array(data.b.buffer), data.attenuation, data.x.min, data.x.max);
                         data.ctx.putImageData(b, 0, 0);
                     },
 

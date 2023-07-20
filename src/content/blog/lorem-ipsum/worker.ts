@@ -59,6 +59,7 @@ plasma = new Plasma(width, height, Step[e.data.step], Palette[e.data.palette]);/
 
             plasma.update(e.data.time);
             ctx.putImageData(buffer, 0, 0);
+            postMessage(true);
             break;
     }
 
