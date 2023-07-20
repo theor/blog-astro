@@ -21,12 +21,12 @@ function fixPonctuation(str: string): string {
 export function autoAbstract(isDev: boolean): RemarkPlugin {
     return function (tree: Root, file: VFile): void {
         const { frontmatter } = file.data.astro;
-        if(isDev){
-            console.warn("skip autoAbstract")
-            frontmatter.timeToRead = "10 min";
-            frontmatter.abstract = "Lorem Ipsum";
-            return;
-        }
+        // if(isDev){
+        //     console.warn("skip autoAbstract")
+        //     frontmatter.timeToRead = "10 min";
+        //     frontmatter.abstract = "Lorem Ipsum";
+        //     return;
+        // }
         console.warn("make autoAbstract")
         // console.warn("  autoAbstract", frontmatter, new Error().stack)
         let timeToRead = Math.max(1, Math.round(toString(tree).split(/[ \n]/).length / 265));

@@ -2,6 +2,7 @@ import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import m2dx from "astro-m2dx";
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
+import toc from "@jsdevtools/rehype-toc";
 import rehypeSlug from 'rehype-slug';
 
 import sitemap from "@astrojs/sitemap";
@@ -22,6 +23,15 @@ behavior: "prepend",
 properties: {"data-link":true}
 };
 
+/** @type {import('@jsdevtools/rehype-toc').Options} */
+const tocOptions = {
+  customizeTOC: e => {
+    e.children = [ {type:'element', tagName: "h1", children: [ {type: "text",
+    value: "Table of content"}] }, ...e.children];
+    console.log(e)
+    return e;
+  }
+};
 // https://astro.build/config
 export default defineConfig({
   vite: {
@@ -31,7 +41,7 @@ export default defineConfig({
   integrations: [myAstro(), mdx(), sitemap(), ],
   markdown: {
     remarkPlugins: [[m2dx, m2dxOptions]],
-    rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions]],
+    rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],
     extendDefaultPlugins: true,
     shikiConfig: {
       // Choose from Shiki's built-in themes (or add your own)
