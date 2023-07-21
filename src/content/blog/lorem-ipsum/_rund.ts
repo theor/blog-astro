@@ -19,7 +19,7 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     const HEIGHT = 480;
     // 2: 2.56ms self 1.39ms
     // 1: 3.59
-    const p = new Roads2(WIDTH, HEIGHT);new WasmHost(
+    const p = new Roads2(WIDTH, HEIGHT); new WasmHost(
         x,
         p.update.bind(p),
         async (div, pane) => {
@@ -100,11 +100,11 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
         (data, f) => {
 
             f(data.t, data.dir[0], data.dir[1]);
-            
-    const ptr = p.get_ptr();
-    // wAsm
-    const buffer = new ImageData(new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4), WIDTH, HEIGHT);
-    
+
+            const ptr = p.get_ptr();
+            // wAsm
+            const buffer = new ImageData(new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4), WIDTH, HEIGHT);
+
             data.ctx.putImageData(buffer, 0, 0);
         },
         (data, t) => {
@@ -126,6 +126,7 @@ function stars(x: HTMLElement) {
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
             canvas.style.width = "100%";
+            canvas.style.touchAction =  "none";
             // canvas.style.width = `${WIDTH}px`;
             // canvas.style.height = `${HEIGHT}px`;
             div.appendChild(canvas);
@@ -140,7 +141,7 @@ function stars(x: HTMLElement) {
 
 
 
-            canvas.addEventListener('mousemove', e => {
+            canvas.addEventListener('pointermove', e => {
                 const bb = canvas.getBoundingClientRect();
                 const x = (e.clientX - bb.left) / bb.width;
                 const y = (e.clientY - bb.top) / bb.height;
@@ -185,18 +186,6 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
         async (div, pane) => {
 
             const ptr = p.get_ptr();
-            let raw_buffer = new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4);
-
-
-            // await new Promise<void>((resolve, reject) => {
-                // while(raw_buffer.byteLength === 0) {
-                    // raw_buffer = new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4);
-
-                // }
-                // resolve();
-            // });
-
-            const buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
@@ -229,7 +218,7 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
 
 
 
-            const data = { t: 0, ctx: canvas.getContext('2d')!, palette: Palette[pal], };
+            const data = { t: 0, ctx: canvas.getContext('2d')!, palette: Palette[pal], buffer: <ImageData | undefined>undefined };
 
             if (pane) {
                 (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
@@ -250,10 +239,14 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
             f(data.t);
 
             const ptr = p.get_ptr();
-            let raw_buffer = new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4);
-            const buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
 
-            data.ctx.putImageData(buffer, 0, 0, 0, 0, data.ctx.canvas.width, data.ctx.canvas.height);
+            if (!data.buffer || data.buffer.data.byteLength === 0) {
+                console.log("REALLOC");
+                let raw_buffer = new Uint8ClampedArray(memory.buffer, ptr, WIDTH * HEIGHT * 4);
+                data.buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
+            }
+
+            data.ctx.putImageData(data.buffer, 0, 0, 0, 0, data.ctx.canvas.width, data.ctx.canvas.height);
 
             // const msg: PlasmaUpdate = { type:"u", time: data.t};
             // worker.postMessage(msg);
@@ -267,7 +260,7 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
 }
 init().then(async wasm => {
     console.log("init", wasm);
-    for(let x of document.querySelectorAll("div[data-sample]")){
+    for (let x of document.querySelectorAll("div[data-sample]")) {
         const elt = x as HTMLElement;
         const sample = (elt.dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
@@ -302,6 +295,7 @@ init().then(async wasm => {
                         canvas.width = WIDTH;
                         canvas.height = HEIGHT;
                         canvas.style.width = "100%";
+                        canvas.style.touchAction =  "none";
                         // canvas.style.width = `${WIDTH * 4}px`;
                         // canvas.style.height = `${HEIGHT * 4}px`;
                         div.appendChild(canvas);
@@ -328,7 +322,14 @@ init().then(async wasm => {
                         pane.addInput(data, "x", { min: -8, max: 8, step: 1 });
 
 
-                        canvas.addEventListener('mousemove', e => {
+                        // canvas.addEventListener('mousemove', e => {
+                        //     const bb = canvas.getBoundingClientRect();
+                        //     const x = Math.floor((e.clientX - bb.left) / bb.width * canvas.width);
+                        //     const y = Math.floor((e.clientY - bb.top) / bb.height * canvas.height);
+
+                        //     data.mousePos = [x, y];
+                        // });
+                        canvas.addEventListener('pointermove', e => {
                             const bb = canvas.getBoundingClientRect();
                             const x = Math.floor((e.clientX - bb.left) / bb.width * canvas.width);
                             const y = Math.floor((e.clientY - bb.top) / bb.height * canvas.height);
