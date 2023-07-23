@@ -239,15 +239,19 @@ The real bottleneck, is the massive amount of `sin/cos` calls. I tried to implem
 
 # Fire effect
 
-<Run id="asd3" data-sample="firestate" data-message="wwwww" title="Move the pointer over the canvas"/>
+<Run id="asd3" data-sample="firestate" data-message="wwwww"/>
 
+Another classic effect. [Fabien Sanglard](https://fabiensanglard.net/doom_fire_psx/index.html) talks in length about its principle, as done in the PXS port of Doom.
 
-
-[Fabien Sanglard](https://fabiensanglard.net/doom_fire_psx/index.html)
+At its core, it's a [cellular automaton](https://en.wikipedia.org/wiki/Cellular_automaton) : a grid where each cell evolves according to its neighbours. The difference with Conway's is that cell values aren't just binary, but values over a range used to index a palette. Values are propagated upward, with a bit of horizontal randomization, and attenuated.
 
 # Stars
 
 <Run data-sample="Stars" />
+
+The earlier instance I found is in [Spacewar! on PDP-1](https://www.markwrobel.dk/post/amiga-machine-code-letter12-starfield-effect/). Draw dots on the screen, move them away from the center of the screen to simulate perspective.
+
+Instead of simple points, I draw lines to give a feeling of speed, and make that speed change over time. the point of perspective is changed over time and when moving the cursor. I like the lo-fi star wars hyperdrive vibe.
 
 # Outrun 3d roads
 

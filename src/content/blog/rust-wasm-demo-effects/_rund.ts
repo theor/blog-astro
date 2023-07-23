@@ -38,7 +38,7 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
 
             const data = {
                 t: 0, ctx: canvas.getContext('2d')!,
-                mousePos: [0, 0],
+                mousePos: [0.5, 0.5],
                 speed_factor: 0.06,
                 dir: [0, 1],
                 paused: false,
@@ -116,7 +116,7 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     ).create();
 }
 
-function stars(x: HTMLElement) {
+function stars(x: HTMLElement, memory: WebAssembly.Memory) {
     const WIDTH = 512;
     const HEIGHT = 512;
     const p = new Stars(WIDTH, HEIGHT);
@@ -135,15 +135,14 @@ function stars(x: HTMLElement) {
             // canvas.style.height = `${HEIGHT}px`;
             div.appendChild(canvas);
 
-            const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
 
             const data = {
                 paused: false,
-                t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!,
+                t: 0, ctx: canvas.getContext('2d')!,
                 mousePos: [0, 0],
                 speed_factor: 0.06,
+                buffer: <ImageData | undefined>undefined ,
             };
-
 
 
             canvas.addEventListener('pointermove', e => {
@@ -161,10 +160,14 @@ function stars(x: HTMLElement) {
         },
         (data, f) => {
 
-            const b = new ImageData(new Uint8ClampedArray(data.b.buffer), WIDTH, HEIGHT);
-
-            f(new Uint8Array(data.b.buffer), data.t, data.mousePos[0], data.mousePos[1], data.speed_factor);
-            data.ctx.putImageData(b, 0, 0);
+            f(data.t, data.mousePos[0], data.mousePos[1], data.speed_factor);
+            
+            if (!data.buffer || data.buffer.data.byteLength === 0) {
+                console.log("REALLOC FIRE");
+                let raw_buffer = new Uint8ClampedArray(memory.buffer, p.get_ptr(), WIDTH * HEIGHT * 4);
+                data.buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
+            }
+            data.ctx.putImageData(data.buffer, 0, 0);
         },
         (data, t) => {
             data.t = t;
@@ -193,8 +196,6 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
         p.update.bind(p),
         // p.update.bind(p),
         (div, pane) => {
-
-            const ptr = p.get_ptr();
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
@@ -278,7 +279,7 @@ init().then(async wasm => {
                 roads2(elt, wasm.memory);
                 break;
             case Sample.Stars:
-                stars(elt);
+                stars(elt, wasm.memory);
                 break;
             case Sample.Plasma:
                 await plasma(elt, elt.dataset, wasm.memory);
@@ -310,17 +311,16 @@ init().then(async wasm => {
                         // canvas.style.height = `${HEIGHT * 4}px`;
                         div.appendChild(canvas);
 
-                        const arrayBuffer = new Uint8ClampedArray(WIDTH * HEIGHT * 4);
                         const fireBuffer = new Uint8Array(WIDTH * HEIGHT);
 
                         const data = {
                             paused: false,
                             canvas: canvas,
+                            buffer: <ImageData | undefined>undefined,
                             ctx: canvas.getContext('2d')!,
                             x: { min: -1, max: 3 },
                             t: 0,
                             r: 5,
-                            b: arrayBuffer,
                             fireBuffer: fireBuffer,
                             mousePos: [WIDTH / 2, HEIGHT / 2],
                             c: { r: 0, g: 0, b: 0 },
@@ -352,14 +352,17 @@ init().then(async wasm => {
                         return data;
                     },
                     (data, f) => {
-
-                        const b = new ImageData(data.b, WIDTH, HEIGHT);
-
                         sf.circle(data.mousePos[0], data.mousePos[1], data.r);
 
+                        f(data.t, data.attenuation, data.x.min, data.x.max);
 
-                        f(data.t, new Uint8Array(data.b.buffer), data.attenuation, data.x.min, data.x.max);
-                        data.ctx.putImageData(b, 0, 0);
+                        if (!data.buffer || data.buffer.data.byteLength === 0) {
+                            console.log("REALLOC FIRE");
+                            let raw_buffer = new Uint8ClampedArray(wasm.memory.buffer, sf.get_ptr(), WIDTH * HEIGHT * 4);
+                            data.buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
+                        }
+
+                        data.ctx.putImageData(data.buffer, 0, 0);
                     },
 
                     (data, t) => {

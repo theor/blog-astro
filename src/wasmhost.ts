@@ -41,13 +41,18 @@ canvas {
 <div id="pane"></div>
 </div>`;
 
-let stack: WasmHost<_, _>[] = [];
+let stack: IWasmHost[] = [];
 
 
 interface Options {
     static: boolean, disablePane: boolean,
 }
-export class WasmHost<T, TD extends { paused: boolean }>  {
+interface IWasmHost {
+    title: string;
+    start(): void;
+    stop(): void;
+}
+export class WasmHost<T, TD extends { paused: boolean }> implements IWasmHost {
 
     f: T;
     pane?: Pane;
@@ -99,7 +104,8 @@ export class WasmHost<T, TD extends { paused: boolean }>  {
 
     }
 
-    private async start() {
+    start() {
+        console.log("START ", this.title, stack.map(x => x.title));
         if (this.div.hasAttribute("data-created")) {
             if (this.onUpdate && this.data)
                 (this.data as any).paused = false;
@@ -120,7 +126,7 @@ export class WasmHost<T, TD extends { paused: boolean }>  {
         const pane = this.pane;
 
 
-        const data = await this.onCreate(this.div.querySelector("#content")!, this.pane);
+        const data = this.onCreate(this.div.querySelector("#content")!, this.pane);
 
         this.data = data;
         // console.warn(data)
@@ -136,9 +142,13 @@ export class WasmHost<T, TD extends { paused: boolean }>  {
 
             this.onChange(data, this.f)
         }
+
+
         // observer.disconnect();
     }
-    private stop() {
+    stop() {
+        console.warn("STOP ", this.title, stack.map(x => x.title));
+
         // console.log("pause", this);
         if (this.onUpdate && this.data)
             (this.data as any).paused = true;
@@ -147,16 +157,30 @@ export class WasmHost<T, TD extends { paused: boolean }>  {
     async create() {
         const tpl = wasm_template.content.cloneNode(true);
         this.div.appendChild(tpl);
+        this.start();
 
         new IntersectionObserver((entries, observer) => {
             const self = this;
             entries.forEach(async entry => {
                 // console.log(entry);
                 if (entry.isIntersecting) {
-                    this.start()
+                    // let found = false;
+                    // for (let i = 0; i < stack.length; i++) {
+                    //     if (stack[i] === this) { stack[i].start(); found = true; }
+                    //     else {
+                    //         stack[i].stop();
+                    //     }
+                    // }
+                    // if (!found) {
+                        this.start()
+                        // stack.push(this);
+                    // }
 
                 } else { // left viewport
                     this.stop();
+                    // if (stack[stack.length - 1] === this) {
+                        // stack.pop();
+                    // }
                 }
             });
         }, { threshold: [0] }).observe(this.div);
