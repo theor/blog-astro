@@ -41,26 +41,36 @@ canvas {
 <div id="pane"></div>
 </div>`;
 
-export class WasmHost<T, TD>  {
+let stack: WasmHost<_, _>[] = [];
+
+
+interface Options {
+    static: boolean, disablePane: boolean,
+}
+export class WasmHost<T, TD extends { paused: boolean }>  {
 
     f: T;
     pane?: Pane;
     div: HTMLElement;
     data?: TD;
+    options: Options;
+    title: string;
 
-    onCreate: (div: HTMLElement, pane: Pane) => Promise<TD>;
+    onCreate: (div: HTMLElement, pane?: Pane) => TD;
     onChange: (data: any, f: T) => void;
     onUpdate?: (data: TD, t: number) => void;
 
-    private  first = true;
+    private first = true;
     private prev_t = 0;
 
     constructor(
+        title: string,
         div: HTMLElement,
         f: T,
-        onCreate: (div: HTMLElement, pane: Pane) => Promise<TD>,
+        onCreate: (div: HTMLElement, pane?: Pane) => TD,
         onChange: (data: TD, f: T) => void,
         onUpdate?: (data: TD, t: number) => void,
+        options?: Options,
     ) {
         // super();
         this.div = div;
@@ -68,85 +78,87 @@ export class WasmHost<T, TD>  {
         this.onCreate = onCreate;
         this.onChange = onChange;
         this.onUpdate = onUpdate;
+        this.options = options ?? { static: false, disablePane: false };
+        this.title = title;
     }
 
     update(t: DOMHighResTimeStamp) {
-            if (t - this.prev_t > 33)
-             {
-                this.prev_t = t;
-                if (!this.data.paused && (this.first || !this.data.static)) {
-                    // console.log("update")
-                    this.onUpdate!(this.data, t / 1000.0);
+        if (t - this.prev_t > 33) {
+            this.prev_t = t;
+            if (this.data && !this.data.paused && (this.first || !this.options.static)) {
+                // console.log("update")
+                this.onUpdate!(this.data, t / 1000.0);
 
-                    // fpsGraph?.begin();
-                    this.onChange(this.data, this.f);
-                    // fpsGraph?.end();
-                    this.first = false;
-                }
+                // fpsGraph?.begin();
+                this.onChange(this.data, this.f);
+                // fpsGraph?.end();
+                this.first = false;
             }
-            requestAnimationFrame(this.update.bind(this));
+        }
+        requestAnimationFrame(this.update.bind(this));
 
     }
-    async create(name: string, options?: { static: boolean, disablePane: boolean }) {
+
+    private async start() {
+        if (this.div.hasAttribute("data-created")) {
+            if (this.onUpdate && this.data)
+                (this.data as any).paused = false;
+            return;
+        }
+
+        this.div.setAttribute("data-created", '');
+        // console.log(options);
+        if (!this.options.disablePane) {
+            this.pane = new Pane({ container: this.div.querySelector("#pane")! as HTMLElement, title: this.title });
+            this.pane.registerPlugin(EssentialsPlugin);
+            this.pane.on('change', (ev) => {
+                // console.log('changed: ', ev, this.data);
+                // data.result = this.f(...Object.values(this.mapData(data)));
+                this.onChange(data, this.f)
+            });
+        }
+        const pane = this.pane;
+
+
+        const data = await this.onCreate(this.div.querySelector("#content")!, this.pane);
+
+        this.data = data;
+        // console.warn(data)
+
+        if (this.onUpdate) {
+            if ((data as any).paused === undefined)
+                (data as any).paused = false;
+            if (pane && !this.options.static)
+                pane.addInput(data, "paused");
+
+            requestAnimationFrame(this.update.bind(this));
+        } else {
+
+            this.onChange(data, this.f)
+        }
+        // observer.disconnect();
+    }
+    private stop() {
+        // console.log("pause", this);
+        if (this.onUpdate && this.data)
+            (this.data as any).paused = true;
+        this.pane?.refresh();
+    }
+    async create() {
         const tpl = wasm_template.content.cloneNode(true);
         this.div.appendChild(tpl);
-
 
         new IntersectionObserver((entries, observer) => {
             const self = this;
             entries.forEach(async entry => {
                 // console.log(entry);
                 if (entry.isIntersecting) {
+                    this.start()
 
-                    if (entry.target.hasAttribute("data-created")) {
-
-                        if (this.onUpdate && this.data)
-                            (this.data as any).paused = false;
-                        return;
-                    }
-
-                    entry.target.setAttribute("data-created", '');
-                    // console.log(options);
-                    if (!options?.disablePane) {
-                        this.pane = new Pane({ container: this.div.querySelector("#pane")!, title: name });
-                        this.pane.registerPlugin(EssentialsPlugin);
-                        this.pane.on('change', (ev) => {
-                            // console.log('changed: ', ev, this.data);
-                            // data.result = this.f(...Object.values(this.mapData(data)));
-                            this.onChange(data, this.f)
-                        });
-
-                       
-                    }
-                    const pane = this.pane;
-
-
-                    const data = Object.assign(await this.onCreate(this.div.querySelector("#content")!, this.pane), options);
-
-                    this.data = data;
-                    // console.warn(data)
-
-                    if (this.onUpdate) {
-                        if ((data as any).paused === undefined)
-                            (data as any).paused = false;
-                        if (pane && !data.static)
-                            pane.addInput(data, "paused");
-                        
-                        requestAnimationFrame(self.update.bind(self));
-                    } else {
-
-                        this.onChange(data, this.f)
-                    }
-                    // observer.disconnect();
-                } else {
-                    // console.log("pause", this);
-                    if (this.onUpdate && this.data)
-                        (this.data as any).paused = true;
-                    this.pane?.refresh();
+                } else { // left viewport
+                    this.stop();
                 }
             });
         }, { threshold: [0] }).observe(this.div);
-
-
     }
 }

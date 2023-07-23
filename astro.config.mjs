@@ -28,7 +28,6 @@ const tocOptions = {
   customizeTOC: e => {
     e.children = [ {type:'element', tagName: "h1", children: [ {type: "text",
     value: "Table of content"}] }, ...e.children];
-    console.log(e)
     return e;
   }
 };

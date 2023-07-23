@@ -11,5 +11,5 @@ const { height = "300px", title = "" } = Astro.props;
     }
 </style>
 <div {...Astro.props}>
-{title}
 </div>
+{title && <span>{title}</span>}

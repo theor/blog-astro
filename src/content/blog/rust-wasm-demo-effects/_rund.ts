@@ -1,4 +1,5 @@
-import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette, } from "./_pkg/sample_rust";
+import { string } from "astro/zod";
+import init, { Plasma, StatefulFire, Stars, Roads2, Step , Palette } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 
 const WIDTH = 32 * 4;
@@ -20,9 +21,10 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     // 2: 2.56ms self 1.39ms
     // 1: 3.59
     const p = new Roads2(WIDTH, HEIGHT); new WasmHost(
+        "Roads2",
         x,
         p.update.bind(p),
-        async (div, pane) => {
+        (div, pane) => {
 
             const canvas = document.createElement("canvas");
             canvas.tabIndex = 0;
@@ -39,6 +41,7 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
                 mousePos: [0, 0],
                 speed_factor: 0.06,
                 dir: [0, 1],
+                paused: false,
             };
 
             canvas.addEventListener('keydown', e => {
@@ -91,7 +94,7 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
                 data.mousePos = [x, y];
             });
 
-            pane.addInput(data, "t", { min: 14, max: 25 });
+            pane?.addInput(data, "t");
             // pane.addMonitor(data, "t");
             // pane.addInput(data, "speed_factor", { min: 0.01, max: 0.2, step: 0.01, });
 
@@ -110,7 +113,7 @@ function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
         (data, t) => {
             data.t = t;
         },
-    ).create("Roads2");
+    ).create();
 }
 
 function stars(x: HTMLElement) {
@@ -118,15 +121,16 @@ function stars(x: HTMLElement) {
     const HEIGHT = 512;
     const p = new Stars(WIDTH, HEIGHT);
     new WasmHost(
+        "Stars",
         x,
         p.update.bind(p),
-        async (div, pane) => {
+        (div, pane) => {
 
             const canvas = document.createElement("canvas");
             canvas.width = WIDTH;
             canvas.height = HEIGHT;
             canvas.style.width = "100%";
-            canvas.style.touchAction =  "none";
+            canvas.style.touchAction = "none";
             // canvas.style.width = `${WIDTH}px`;
             // canvas.style.height = `${HEIGHT}px`;
             div.appendChild(canvas);
@@ -134,6 +138,7 @@ function stars(x: HTMLElement) {
             const arrayBuffer = new Uint32Array(WIDTH * HEIGHT);
 
             const data = {
+                paused: false,
                 t: 0, b: arrayBuffer, ctx: canvas.getContext('2d')!,
                 mousePos: [0, 0],
                 speed_factor: 0.06,
@@ -149,8 +154,8 @@ function stars(x: HTMLElement) {
                 data.mousePos = [x, y];
             });
 
-            pane.addInput(data, "t", { min: 0, max: 1000 });
-            pane.addInput(data, "speed_factor", { min: 0.01, max: 0.2, step: 0.01, });
+            pane?.addInput(data, "t", { min: 0, max: 1000 });
+            pane?.addInput(data, "speed_factor", { min: 0.01, max: 0.2, step: 0.01, });
 
             return data;
         },
@@ -165,8 +170,11 @@ function stars(x: HTMLElement) {
             data.t = t;
             // (data as any).tInput.refresh()
         },
-    ).create("Stars");
+    ).create();
 }
+
+// declare var Step: { [key: string]: number };
+// declare var Palette: { [key: string]: number };
 
 async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly.Memory) {
     const WIDTH = 160;
@@ -175,15 +183,16 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
     const pal = dataset["palette"] ?? "Colors";
     // console.log(dataset);
 
-    const p = new Plasma(WIDTH, HEIGHT, Step[step], Palette[pal]);
+    const p = new Plasma(WIDTH, HEIGHT, (Step as any)[step], (Palette as any)[pal]);
     // const worker = new Worker(new URL('./worker', import.meta.url), { type: 'module' });
 
 
     await new WasmHost(
+        "Plasma",
         x,
         p.update.bind(p),
         // p.update.bind(p),
-        async (div, pane) => {
+        (div, pane) => {
 
             const ptr = p.get_ptr();
             const canvas = document.createElement("canvas");
@@ -218,12 +227,12 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
 
 
 
-            const data = { t: 0, ctx: canvas.getContext('2d')!, palette: Palette[pal], buffer: <ImageData | undefined>undefined };
+            const data = { paused: false, t: 0, ctx: canvas.getContext('2d')!, palette: (Palette as any)[pal], buffer: <ImageData | undefined>undefined };
 
             if (pane) {
                 (data as any).tInput = pane.addInput(data, "t", { min: 0, max: 10 });
                 pane.addInput(data, "palette", {
-                    options: { ...Object.keys(Palette).filter(k => isNaN(Number(k))).reduce((p, k) => Object.assign(p, { [k]: Palette[k] }), {}) }
+                    options: { ...Object.keys(Palette).filter(k => isNaN(Number(k))).reduce((p, k) => Object.assign(p, { [k]: (Palette as any)[k] }), {}) }
                 }).on('change', e => {
                     const palette = Number(e.value);
                     p.set_palette(palette);
@@ -256,7 +265,8 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
             data.t = t % 20;
             // (data as any).tInput.refresh()
         },
-    ).create("Plasma", { disablePane: dataset["disablepane"] === 'true', static: dataset["static"] === 'true' });
+        { disablePane: dataset["disablepane"] === 'true', static: dataset["static"] === 'true' },
+    ).create();
 }
 init().then(async wasm => {
     console.log("init", wasm);
@@ -288,14 +298,14 @@ init().then(async wasm => {
 
                 }
                 // sf.set_palette(palette);
-                new WasmHost(elt,
+                new WasmHost("Fire", elt,
                     sf.update.bind(sf),
                     (div, pane) => {
                         const canvas = document.createElement("canvas");
                         canvas.width = WIDTH;
                         canvas.height = HEIGHT;
                         canvas.style.width = "100%";
-                        canvas.style.touchAction =  "none";
+                        canvas.style.touchAction = "none";
                         // canvas.style.width = `${WIDTH * 4}px`;
                         // canvas.style.height = `${HEIGHT * 4}px`;
                         div.appendChild(canvas);
@@ -304,23 +314,25 @@ init().then(async wasm => {
                         const fireBuffer = new Uint8Array(WIDTH * HEIGHT);
 
                         const data = {
+                            paused: false,
                             canvas: canvas,
                             ctx: canvas.getContext('2d')!,
-                            x: { min: -1, max: 2 },
+                            x: { min: -1, max: 3 },
                             t: 0,
                             r: 5,
                             b: arrayBuffer,
                             fireBuffer: fireBuffer,
-                            mousePos: [0, 0],
+                            mousePos: [WIDTH / 2, HEIGHT / 2],
                             c: { r: 0, g: 0, b: 0 },
                             attenuation: 1,
                         };
 
-                        pane.addInput(data, "r", { label: "mouse radius", min: 1, max: 50, step: 1 });
-                        pane.addMonitor(data, "t");
-                        pane.addInput(data, "attenuation", { min: 0, max: 8, step: 1 });
-                        pane.addInput(data, "x", { min: -8, max: 8, step: 1 });
-
+                        if (pane) {
+                            pane.addInput(data, "r", { label: "mouse radius", min: 1, max: 50, step: 1 });
+                            pane.addMonitor(data, "t");
+                            pane.addInput(data, "attenuation", { min: 0, max: 8, step: 1 });
+                            pane.addInput(data, "x", { min: -8, max: 8, step: 1 });
+                        }
 
                         // canvas.addEventListener('mousemove', e => {
                         //     const bb = canvas.getBoundingClientRect();
@@ -337,7 +349,7 @@ init().then(async wasm => {
                             data.mousePos = [x, y];
                         });
 
-                        return Promise.resolve(data);
+                        return data;
                     },
                     (data, f) => {
 
@@ -353,7 +365,7 @@ init().then(async wasm => {
                     (data, t) => {
                         data.t = t;
 
-                    }).create("Doom fire");
+                    }).create();
 
                 break;
 
