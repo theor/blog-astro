@@ -1,7 +1,6 @@
 import { string } from "astro/zod";
 import init, { Plasma, StatefulFire, Stars, Roads2, Step , Palette } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
-
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
 
@@ -15,12 +14,44 @@ enum Sample {
     Roads = "Roads",
 
 }
-function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
+async function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     const WIDTH = 640;
     const HEIGHT = 480;
+    const imUrl = x.dataset["img"]!;
+    console.warn(imUrl)
     // 2: 2.56ms self 1.39ms
     // 1: 3.59
-    const p = new Roads2(WIDTH, HEIGHT); new WasmHost(
+    // const img = await fetch(imUrl);
+    // console.log(img);
+    // const imgBuffer = await img.arrayBuffer();
+    // console.log(imgBuffer);
+
+const image = new Image();
+
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext('2d')!;
+
+x.appendChild(canvas);
+
+
+await new Promise((resolve, reject) => {
+    image.onload = () => {
+        canvas.width = image.width;
+        canvas.height = image.height;
+        resolve(image);
+    };
+    image.onerror = e => reject(e);
+image.src = imUrl;
+
+});
+ctx.drawImage(image, 0, 0);
+
+
+    const data = new Uint32Array(ctx.getImageData(0,0, ctx.canvas.width, ctx.canvas.height,).data.buffer);
+    console.log(data);
+    // canvas.remove();
+    const p = new Roads2(WIDTH, HEIGHT, data);
+     new WasmHost(
         "Roads2",
         x,
         p.update.bind(p),
@@ -276,7 +307,7 @@ init().then(async wasm => {
         const sample = (elt.dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
             case Sample.Roads:
-                roads2(elt, wasm.memory);
+                await roads2(elt, wasm.memory);
                 break;
             case Sample.Stars:
                 stars(elt, wasm.memory);

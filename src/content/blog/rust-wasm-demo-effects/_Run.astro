@@ -1,7 +1,10 @@
 ---
 const { height = "300px", title = "" } = Astro.props;
----
+    import rocket  from "./clouds.png";
 
+---
+<!-- <img src={rocket}/> -->
+<!-- {rocket} -->
 <script>
     import { AstroGreet } from "./_rund";
 </script>
@@ -10,6 +13,6 @@ const { height = "300px", title = "" } = Astro.props;
         min-height: var(--wasmheight);
     }
 </style>
-<div {...Astro.props}>
+<div {...Astro.props} data-img={rocket}>
 </div>
 {title && <span>{title}</span>}
