@@ -1,6 +1,7 @@
 ---
 const { height = "300px", title = "" } = Astro.props;
-    import rocket  from "./clouds.png";
+    import bg  from "./clouds.png";
+    import tree  from "./CoconutTree.png";
 
 ---
 <!-- <img src={rocket}/> -->
@@ -13,6 +14,6 @@ const { height = "300px", title = "" } = Astro.props;
         min-height: var(--wasmheight);
     }
 </style>
-<div {...Astro.props} data-img={rocket}>
+<div {...Astro.props} data-bg={bg} data-tree={tree}>
 </div>
 {title && <span>{title}</span>}

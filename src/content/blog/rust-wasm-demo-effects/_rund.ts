@@ -1,5 +1,5 @@
 import { string } from "astro/zod";
-import init, { Plasma, StatefulFire, Stars, Roads2, Step , Palette } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
@@ -14,11 +14,48 @@ enum Sample {
     Roads = "Roads",
 
 }
+interface Bitmap {
+    w: number,
+    h: number,
+    data: Uint32Array,
+}
+const bitmapCache = new Map<string, Promise<Bitmap>>();
+async function loadBitmap(name: string): Promise<Bitmap> {
+    if (bitmapCache.has(name)) {
+        return bitmapCache.get(name)!;
+    }
+    const p = new Promise<Bitmap>((resolve, reject) => {
+        const image = new Image();
+
+        const canvas = document.createElement("canvas");
+
+        image.onload = () => {
+            canvas.width = image.width;
+            canvas.height = image.height;
+
+            const ctx = canvas.getContext('2d')!;
+            ctx.drawImage(image, 0, 0);
+
+            const data = new Uint32Array(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height,).data.buffer);
+            resolve({
+                w: image.width,
+                h: image.height,
+                data: data,
+            });
+        };
+        image.onerror = e => reject(e);
+        image.src = name;
+
+    });
+    bitmapCache.set(name, p);
+    return p;
+}
+
 async function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     const WIDTH = 640;
     const HEIGHT = 480;
-    const imUrl = x.dataset["img"]!;
-    console.warn(imUrl)
+    const treeUrl = x.dataset["tree"]!;
+    const bgUrl = x.dataset["bg"]!;
     // 2: 2.56ms self 1.39ms
     // 1: 3.59
     // const img = await fetch(imUrl);
@@ -26,32 +63,11 @@ async function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     // const imgBuffer = await img.arrayBuffer();
     // console.log(imgBuffer);
 
-const image = new Image();
-
-const canvas = document.createElement("canvas");
-const ctx = canvas.getContext('2d')!;
-
-x.appendChild(canvas);
-
-
-await new Promise((resolve, reject) => {
-    image.onload = () => {
-        canvas.width = image.width;
-        canvas.height = image.height;
-        resolve(image);
-    };
-    image.onerror = e => reject(e);
-image.src = imUrl;
-
-});
-ctx.drawImage(image, 0, 0);
-
-
-    const data = new Uint32Array(ctx.getImageData(0,0, ctx.canvas.width, ctx.canvas.height,).data.buffer);
-    console.log(data);
+    const bgBitmap = await loadBitmap(bgUrl);
+    const treeBitmap = await loadBitmap(treeUrl);
     // canvas.remove();
-    const p = new Roads2(WIDTH, HEIGHT, data);
-     new WasmHost(
+    const p = new Roads2(WIDTH, HEIGHT, bgBitmap.data, treeBitmap.data);
+    new WasmHost(
         "Roads2",
         x,
         p.update.bind(p),
@@ -76,7 +92,6 @@ ctx.drawImage(image, 0, 0);
             };
 
             canvas.addEventListener('keydown', e => {
-                console.log(e);
                 switch (e.key) {
                     case 'w':
                     case 'ArrowUp':
@@ -172,7 +187,7 @@ function stars(x: HTMLElement, memory: WebAssembly.Memory) {
                 t: 0, ctx: canvas.getContext('2d')!,
                 mousePos: [0, 0],
                 speed_factor: 0.06,
-                buffer: <ImageData | undefined>undefined ,
+                buffer: <ImageData | undefined>undefined,
             };
 
 
@@ -192,7 +207,7 @@ function stars(x: HTMLElement, memory: WebAssembly.Memory) {
         (data, f) => {
 
             f(data.t, data.mousePos[0], data.mousePos[1], data.speed_factor);
-            
+
             if (!data.buffer || data.buffer.data.byteLength === 0) {
                 console.log("REALLOC FIRE");
                 let raw_buffer = new Uint8ClampedArray(memory.buffer, p.get_ptr(), WIDTH * HEIGHT * 4);
