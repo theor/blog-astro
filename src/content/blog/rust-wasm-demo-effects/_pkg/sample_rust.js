@@ -211,9 +211,12 @@ export class Stars {
     /**
     * @param {number} w
     * @param {number} h
+    * @param {Uint32Array} sprite
     */
-    constructor(w, h) {
-        const ret = wasm.stars_new(w, h);
+    constructor(w, h, sprite) {
+        const ptr0 = passArray32ToWasm0(sprite, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.stars_new(w, h, ptr0, len0);
         return Stars.__wrap(ret);
     }
     /**
