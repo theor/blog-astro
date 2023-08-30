@@ -11,7 +11,7 @@ import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 // );
 let posts = await Promise.all(
     (
-        await getCollection("blog", (x) => !x.data.draft)
+        await getCollection("blog", (x) => import.meta.env.PROD ? !x.data.draft : true)
     )
         .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
         .map(async (x) => {
