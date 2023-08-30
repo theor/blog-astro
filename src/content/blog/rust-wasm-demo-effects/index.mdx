@@ -1,0 +1,268 @@
+---
+title: "Demo effects using Rust and WebAssembly"
+author: "theor"
+type: "post"
+pubDate: 2023-04-15T15:43:14.015Z
+description: ""
+banner: "_banner.webm"
+tags: ["rust", "wasm", "demoscene"]
+draft: true
+---
+import Video from '../../../components/Video.astro';
+import Run from "./_Run.astro"
+
+<Video src={import("./_banner.webm")} />
+
+I needed a reason to play with rust+wasm, and I have always loved the [demoscene](http://demoscene-the-art-of-coding.net/the-demoscene/) and its cleverness. I also wanted the result to be embeddable here on my blog made with Astro. Guess who's about to fill buffers with fire, plasma, stars and roads.
+
+# Rust, Wasm bootstrap
+
+The rust community has spent much time making WebAssembly a functional and efficient target, and it shows. First, the `rustc` compiler has [multiple targets](https://rustwasm.github.io/wasm-bindgen/reference/rust-targets.html) for it: we'll use the seemingly undecided `wasm32-unknown-unknown` target. The workflow that worked for me uses [wasm-pack](https://rustwasm.github.io/docs/wasm-pack/), which, in one command, handles the compilation using `cargo`, the wasm optimization/stripping using `wasm-opt` and generates the .js/.ts glue code.
+
+I also discovered the lovely [cargo watch](https://crates.io/crates/cargo-watch) to monitor my rust folder and compile in on change, using this command:
+```sh
+cargo watch -s "wasm-pack build --profiling --target web -d blog-astro/src/content/blog/lorem-ipsum/_pkg --no-typescript --no-pack"
+```
+
+About arguments:
+- I use `--profiling` to get function names when profiling in Chrome. Never used `--debug` ; I don't know if I got too much in the oldskool mindset, but I didn't even searched how to attach a debugger with WASM, or if it is even possible
+- `--target web` outputs wasm ready for the browser. Didn't get `--target bundler` to work with Astro
+- I did write my glue code in Typescript, but the ts typings that wasm-build outputs made Astro choke on a const with no value
+- `--no-pack` prevents the generation of a `package.json` file, which IIUC is used when publishing npm packages. It also made Astro choke
+
+The resulting .js files exports an `init` promise loading the actual wasm, and everything exported by the rust code.
+
+Rust exports are made using `wasm-bindgen` :
+
+```rust
+#[wasm_bindgen]
+pub struct Plasma { /* ... */ }
+
+#[wasm_bindgen]
+impl Plasma {
+    #[wasm_bindgen(constructor)]
+    pub fn new(w: usize, h: usize) -> Self { /* ... */ }
+
+    pub fn update(&mut self,t: f32) { /* ... */ }
+}
+```
+
+
+```ts
+import init, { Plasma, StatefulFire, Stars, Roads2,  } from "./_pkg/sample_rust";
+
+await init();
+const p = new Plasma(WIDTH, HEIGHT);
+p.update(time);
+```
+
+
+I added controls using [TweakPane](https://cocopon.github.io/tweakpane/), a great js lib for controls à la datgui/imgui. Then it's just a matter of filling an HTML Canvas using rust code - more on that in the [Wasm interop optimization section](#todays-rabbit-hole--wasm-interop-optimization)
+
+# Plasma effect
+
+<Run data-sample="Plasma" />
+The plasma effect is typical of demo effects: trivial to do today with a GPU, impressive when it was written on a CPU, often without a floating point unit. Look at this Amstrad demo:
+
+<YouTube id="cEFDKup7il8"/>
+
+
+The gist of it is to compute a color for each pixel using some combination of trigonometric functions ; usually, the function returns a valueused as an index in a pre-computed palette. An indexed palette used to be a requirement - the above Amstrad CPC had at best at 16 colors palette out of 27, in Mode 0 (160x200 pixels) before using any of the typical palette-expanding tricks of the time. However palette indexing is still more performant today, and gives other opportunities like [palette shifting (more details in my esp32/demoscene article)](/esp32-love-notes-demoscene/#tooling-for-palette-indexed-bitmaps).
+
+Let's start with simple concentric circles and a grey scale palette. The palette is a simple lerp outputting ABGR colors as `u32`, as the HTML canvas expects that format:
+
+```rust
+
+fn col32((r,g,b):(u8,u8,u8)) -> u32 {
+    255 << 24 | (b as u32) << 16 | (g as u32) << 8 | (r as u32)
+}
+
+const PALETTE_SIZE: usize = 256;
+let mut palette: Vec<u32> = vec![0; PALETTE_SIZE];
+
+for i in 0..PALETTE_SIZE {
+    // color_sys crate
+    let c = col32((i as u8, i as u8, i as u8));
+    palette[i] = c;
+}
+```
+
+The concentric circles are made by piping the distance to the center in a sine :
+
+```rust
+for y in 0..self.h {
+    for x in 0..self.w {
+        // position as ratios, in the [0,1] range
+        let fx = x as f32 / (self.w - 1) as f32;
+        let fy = y as f32 / (self.h - 1) as f32;
+
+        // palette index
+        let v = (
+            // distance from the current point to the center
+            vec2(fx - 0.5, fy - 0.5)
+            // scaled to get multiple bands
+            * 16.0
+        )
+        .length()
+        // make it oscillate
+        .sin();
+
+        // buffer index
+        let i = y * self.w + x;
+        b[i] = self.palette[
+            remap(
+                v,
+                -1.0..=1.0,
+                0.0..=255.0)
+            as usize % 256];
+    }
+}
+```
+
+And that's all. The result, with the palette drawn below :
+
+<Run data-sample="Plasma" data-static="true" data-step="FixedCircle" data-palette="Greyscale" data-disablepane="true"/>
+
+It's now time to animate the effect, first by shifting the palette, which is just a matter of offsetting the palette index with the time in seconds. I'll do it before remapping the [-1,1] value to [0,255] :
+
+```rust
+remap(
+    (vec2(fx - 0.5, fy - 0.5) * 16.0).length().sin()
+     + time , // shift
+    -1.0..=1.0,
+    0.0..=255.0,
+) as usize
+% 256
+```
+
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="Greyscale" />
+
+Doing it this way means we'll cycle around the palette, which shows that the palette is not continuous. Let's loop the palette:
+
+```rust
+for i in 0..PALETTE_SIZE {
+    // go from 0 to 1 to 0 over the palette range
+    let c = if i < PALETTE_SIZE / 2 {
+        i as i32 * 2
+    } else {
+        PALETTE_SIZE as i32 - ((i - PALETTE_SIZE / 2) as i32 * 2)
+    };
+    col32(Rgb::from((c, c, c)).into())
+}
+```
+
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="GreyscaleLooped"/>
+
+That's better. Time for a better palette:
+
+```rust
+for i in 0..PALETTE_SIZE {
+    let f = i as f32 / PALETTE_SIZE as f32;
+    let ff = if i < PALETTE_SIZE / 2 {
+        f * 2.0
+    } else {
+        1.0 - ((f - 0.5) * 2.0)
+    };
+
+    col32(Rgb::from(Hsl::from((
+        // lerp the hue from blue to green-yellow
+        lerp(203.0..=31.0, ff / 2.0),
+        82.0,
+        // lerp the lightness
+        ((ff / 2.0 + 0.5).powi(2) * 100.0).clamp(10.0, 100.0),
+    ))).into())
+}
+```
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="Colors"/>
+
+Now let's animate the circle center too :
+```rust
+remap(
+    (vec2(
+        fx - 0.25 - time.sin() * 0.2,
+        fy - 0.3 - time.cos() * 0.3
+    ) * 16.0).length().sin()
+    + time,
+    -1.0..=1.0,
+    0.0..=255.0,
+) as usize
+    % 256
+```
+<Run data-sample="Plasma" data-step="Perturbation" data-palette="Colors"/>
+
+We now have everything we need: a rendering function akin to a [SDF](https://en.wikipedia.org/wiki/Signed_distance_function), animated, and palette shifting. It just needs an interesting rendering function. I'll use the [bracket-noise crate](https://docs.rs/crate/bracket-noise/latest) :
+
+
+```rust
+let w = noise.get_noise(
+    // warp the noise domain
+    fx * 3.0 + (time / 3.0).sin(),
+    fy + (time / 7.0).cos().powi(2));
+remap(
+    // feed the noise to itself
+    noise.get_noise(
+        fx + w + time.cos(),
+        fy + w.powi(3) + (time/1.7).sin())
+    // palette shifting
+    + time * (fx * fy + 0.1) / 6.0,
+    0.0..=0.7,
+    0.0..=255.0,
+) as usize
+    % 256
+```
+
+<Run data-sample="Plasma" />
+
+Optionally, the palette could be stepped into non-continuous colors:
+
+```rust
+for i in 0..PALETTE_SIZE {
+    let f = i as f32 / PALETTE_SIZE as f32;
+    let ff = if i < PALETTE_SIZE / 2 {
+        f * 2.0
+    } else {
+        1.0 - ((f - 0.5) * 2.0)
+    };
+    // stepping : 
+    let stepped = (ff * 4.0).round() / (4.0);
+    col32(Rgb::from(Hsl::from((
+        lerp(203.0..=31.0, stepped / 2.0),
+        82.0,
+        ((stepped / 2.0 + 0.5).powi(2) * 100.0).clamp(10.0, 100.0),
+    ))).into())
+}
+```
+<Run data-sample="Plasma" data-palette="RainbowStepped"/>
+
+
+The real bottleneck, is the massive amount of `sin/cos` calls. I tried to implement a precomputed look-up table for the trigonometry as [we used to](https://namoseley.wordpress.com/2015/07/26/sincos-generation-using-table-lookup-and-iterpolation/) but Rust's own trig is still twice as fast. Maybe I'll investigate, there's a potential article here...
+
+# Fire effect
+
+<Run id="asd3" data-sample="firestate" data-message="wwwww"/>
+
+Another classic effect. [Fabien Sanglard](https://fabiensanglard.net/doom_fire_psx/index.html) talks in length about its principle, as done in the PXS port of Doom.
+
+At its core, it's a [cellular automaton](https://en.wikipedia.org/wiki/Cellular_automaton) : a grid where each cell evolves according to its neighbours. The difference with Conway's is that cell values aren't just binary, but values over a range used to index a palette. Values are propagated upward, with a bit of horizontal randomization, and attenuated.
+
+# Stars
+
+<Run data-sample="Stars" />
+
+The earlier instance I found is in [Spacewar! on PDP-1](https://www.markwrobel.dk/post/amiga-machine-code-letter12-starfield-effect/). Draw dots on the screen, move them away from the center of the screen to simulate perspective.
+
+Instead of simple points, I draw lines to give a feeling of speed, and make that speed change over time. the point of perspective is changed over time and when moving the cursor. I like the lo-fi star wars hyperdrive vibe.
+
+# Outrun 3d roads
+
+<Run data-sample="Roads"/>
+
+Credit: background from [Panda](https://pixeljoint.com/pixelart/39681.htm), tree from the original Outrun game
+
+[Lou's pseudo 3d page](http://www.extentofthejam.com/pseudo/)
+
+# Today's rabbit hole : Wasm interop optimization
+
+https://github.com/rustwasm/wasm-bindgen/issues/2439
+
+# Another rabbit hole : macros and reflection 

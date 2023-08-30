@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../rillus/sample/sample-rust"
+		}
+	],
+	"settings": {}
+}

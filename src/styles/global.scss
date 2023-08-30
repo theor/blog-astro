@@ -176,6 +176,27 @@ a[data-link] {
   }
 }
 
+.toc {
+  #table-of-content {
+    padding-left: 30px;
+    margin-bottom: 0.5rem;
+  }
+  font-family: Montserrat, sans-serif;
+  border-left: solid 8px var(--color-accent);
+  & > ol {
+    margin-top: 0px;
+  }
+  ol {
+  list-style-type: none;
+  padding-inline-start: 30px;
+  }
+  // background-color: var(--color-accent);
+  a {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+}
+
 // span.icon-link::before {
 //   width: 20px;
 //   content: "asdasd";

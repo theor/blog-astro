@@ -1,6 +1,14 @@
 {
   "extends": "astro/tsconfigs/strict",
+  "exclude": [
+    "**/*.d.ts"
+  ],
   "compilerOptions": {
+    "allowJs": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+    },
     "strictNullChecks": true
   }
 }

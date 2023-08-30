@@ -13,7 +13,9 @@ const {slug,remarkPluginFrontmatter } = Astro.props;
 
 <html lang="en">
   <head>
-    <BaseHead title={title} description={remarkPluginFrontmatter?.abstract || description} image={await findImage(slug + "/" + banner)} />
+    <BaseHead title={title} description={remarkPluginFrontmatter?.abstract || description}
+     image={await findImage(slug + "/" + banner)} 
+     />
     <style>
       .title {
         font-size: 2em;
