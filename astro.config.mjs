@@ -12,6 +12,7 @@ import {myAstro} from './src/integration';
 const m2dxOptions = {
   // relativeImages: true,
   autoImports: true,
+  exportComponents: true,
   // doesn't work with astro getCollection
   // scanAbstract: true,
   // rawmdx: true,

@@ -9,7 +9,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "plop": "plop"
+    "plop":"plop"
   },
   "dependencies": {
     "@astro-community/astro-embed-youtube": "^0.4.1",

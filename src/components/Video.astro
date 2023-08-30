@@ -17,12 +17,42 @@ const src2 = await src;
   style={{ height: height ?? "250px", width: width }}
 >
   <video
+  class="lazy"
     onclick="this.play()"
-    src={src2.default}
     autoplay
     muted
     controls={!nocontrols}
     loop={!noloop}
-    style={{ height: "100%", width: "100%" }}></video>
+    style={{ height: "100%", width: "100%" }}>
+    <source data-src={src2.default} />
+  </video>
   {caption && <span>{caption}</span>}
 </div>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+  var lazyVideos = [].slice.call(document.querySelectorAll("video.lazy"));
+
+  if ("IntersectionObserver" in window) {
+    var lazyVideoObserver = new IntersectionObserver(function(entries, observer) {
+      entries.forEach(function(video) {
+        if (video.isIntersecting) {
+          for (var source in video.target.children) {
+            var videoSource = video.target.children[source];
+            if (typeof videoSource.tagName === "string" && videoSource.tagName === "SOURCE") {
+              videoSource.src = videoSource.dataset.src;
+            }
+          }
+
+          video.target.load();
+          video.target.classList.remove("lazy");
+          lazyVideoObserver.unobserve(video.target);
+        }
+      });
+    });
+
+    lazyVideos.forEach(function(lazyVideo) {
+      lazyVideoObserver.observe(lazyVideo);
+    });
+  }
+});
+</script>
