@@ -16,7 +16,7 @@ const { src,alt,caption, children, ...rest } = Astro.props;
          }
 </style>
 <figure class="blog-post-figure" {...rest}>
-    <img src={src} alt={alt || caption}/>
+    <img src={src.src} alt={alt || caption}/>
   {children && <figcaption><slot /></figcaption>}
   {caption && <figcaption>{caption}</figcaption>}
 </figure>

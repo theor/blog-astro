@@ -10,7 +10,7 @@ import {myAstro} from './src/integration';
 
 /** @type {import('astro-m2dx').Options} */
 const m2dxOptions = {
-  relativeImages: true,
+  // relativeImages: true,
   autoImports: true,
   // doesn't work with astro getCollection
   // scanAbstract: true,
@@ -34,7 +34,7 @@ const tocOptions = {
 // https://astro.build/config
 export default defineConfig({
   vite: {
-    assetsInclude: ["**/*.m4v", "**/*.webm"],
+    assetsInclude: ["**/*.m4v", "**/*.webm", "**/*.bin"],
   },
   site: "https://theor.xyz",
   integrations: [myAstro(), mdx(), sitemap(), ],

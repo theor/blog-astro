@@ -8,7 +8,7 @@ tags: ["fsharp"]
 
 import Video from "../../../components/Video.astro";
 
-![Screenshot](banner.png)
+![Screenshot](./banner.png)
 
 At work, I used to write a _lot_ of unit tests that would create a graph, then act on it. A bit of ASCII art can go a long way to quickly get the point of the graph ; I eventually got bored by drawing them by hand and wrote a visual tool to do it: https://unicode-graphs.netlify.app/
 
@@ -108,7 +108,7 @@ let portWidth =
 Then comes the "rasterization": an array of `char` and `id` tuples is created using the canvas size measured earlier, then the graph is "drawn" in that framebuffer.
 The array is then transformed into a `div` with one `pre` per line, each line containing multiple spans to allow multiple colors:
 
-![Straight HTML renderer](spans.png)
+![Straight HTML renderer](./spans.png)
 
 The framebuffer also contains the ID of the owning entity of each character, to change the node/edge/port color when hovered or selected :
 

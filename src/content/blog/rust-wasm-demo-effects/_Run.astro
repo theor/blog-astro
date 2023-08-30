@@ -1,22 +1,20 @@
 ---
 const { height = "300px", title = "" } = Astro.props;
-    import bg  from "./clouds.png";
-    import tree  from "./CoconutTree.png";
-    import planet  from "./Ice.png";
-    import url from "./tracks.bin?url";
+    import bg  from "./clouds.png?url";
+    import tree  from "./CoconutTree.png?url";
+    import planet  from "./Ice.png?url";
 
 ---
 <!-- <img src={rocket}/> -->
 <!-- {rocket} -->
 <script>
-    import { AstroGreet } from "./_rund";
+    import * as rund from "./_rund";
 </script>
 <style define:vars={{ wasmheight: height }}>
     div {
         min-height: var(--wasmheight);
     }
 </style>
-<h1>{url}</h1>
-<div {...Astro.props} data-bg={bg} data-tree={tree} data-planet={planet} data-stars-rocket={url}>
+<div {...Astro.props} data-bg={bg} data-tree={tree} data-planet={planet}>
 </div>
 {title && <span>{title}</span>}

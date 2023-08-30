@@ -1,5 +1,4 @@
-import { string } from "astro/zod";
-import init, { Stars,init_rocket } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
@@ -29,6 +28,7 @@ async function loadBitmap(name: string): Promise<Bitmap> {
 
         const canvas = document.createElement("canvas");
 
+        console.log("img", name);
         image.onload = () => {
             canvas.width = image.width;
             canvas.height = image.height;
@@ -170,9 +170,6 @@ async function stars(x: HTMLElement, memory: WebAssembly.Memory) {
 
 
     console.log(x.dataset)
-    const stars_rocket = await ((await fetch(x.dataset["starsRocket"]!)).blob())
-    console.log(stars_rocket)
-    init_rocket(new Uint8Array(await stars_rocket.arrayBuffer()));
 
     const p = new Stars(WIDTH, HEIGHT, bgBitmap.data);
     new WasmHost(

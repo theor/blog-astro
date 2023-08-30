@@ -27,7 +27,7 @@ Both games might seem similar, but there are a few key differences between their
 
 - In Satisfactory, a belt has exactly one entry point and one exit point : it always connect one machine's exit to another's entry, including mergers and splitters. A belt has one lane of items
 
-![Credit: Satisfactory Steam page](satisfactory.jpg)
+![Credit: Satisfactory Steam page](./satisfactory.jpg)
 
 - In Factorio, belts have two lanes of items. A belt can drop its content on another belt without needing any extra machine
 
@@ -463,7 +463,7 @@ In no specific order:
 - Belt update:
   - In real-world conditions, it would need to be batched and/or time sliced. Updating half of the distant belts but at twice the rate could work. Lots of edge cases.
   - Too many `jobhandle.Complete()` in the actual code. Look at that:
-    ![At least it's packed, 2M items](Profiler.png)
+    ![At least it's packed, 2M items](./Profiler.png)
 - Data representation:
   - In Satisfactory, belts are probably stored as bezier curves
   - Implementing Factorio's two-lane belts with random merge points would take a lot more effort, especially given how well the game runs

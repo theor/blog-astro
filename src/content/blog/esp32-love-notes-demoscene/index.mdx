@@ -7,10 +7,11 @@ description: "A treatise on scope-creep and rabbit holes"
 tags: ["esp32", "gnu-rocket"]
 banner: "banner.jpg"
 ---
+import Video from '../../../components/Video.astro';
 
 I’ve been tinkering with arduino-like platforms recently (more on the midi synth soon) and got the idea to make a small message board to leave notes to my girlfriend. This is how I ended up with a simulator, an integration with a demoscene tracker, custom tools to make palette cycling effects, having to learn CAD to make a laser-cut front panel and more.
 
-![Result](banner.jpg)
+![Result](./banner.jpg)
 
 # A very sensible plan
 
@@ -117,11 +118,11 @@ I went with a simple RLE encoding. That frame goes from 9879 bytes to 2279 bytes
 
 I also have animations :
 
-![Frames](frames.png)
+![Frames](./frames.png)
 
 Instead of storing the whole frame every time, I decided to just store the delta to the first frame. Matching tooling:
 
-![Delta to the first frame](frames-delta.png)
+![Delta to the first frame](./frames-delta.png)
 
 Each subsequent frame went down to ~100 bytes on average. Quite a gain.
 
@@ -133,7 +134,7 @@ I’m now experimenting with the [ESP8266Audio](https://github.com/earlephilhowe
 
 # Laser-Cutting a Front Panel
 
-I recently found that the fantastic [lespacemaker](https://www.lespacemaker.com/) maker space is really close to my place - and they have a laser cutter. First draft using acrylic : ![Acrylic front panel](panel.jpg) Maybe I’ll make it a full case eventually... This was made using [CadQuery](https://cadquery.readthedocs.io/en/latest/), a python lib to CAD using code. I did try Fusion, Sketch up and more (too button-clicky, found myself dreaming about writing a plugin), openscad (too slow) and a few others, but in the end...
+I recently found that the fantastic [lespacemaker](https://www.lespacemaker.com/) maker space is really close to my place - and they have a laser cutter. First draft using acrylic : ![Acrylic front panel](./panel.jpg) Maybe I’ll make it a full case eventually... This was made using [CadQuery](https://cadquery.readthedocs.io/en/latest/), a python lib to CAD using code. I did try Fusion, Sketch up and more (too button-clicky, found myself dreaming about writing a plugin), openscad (too slow) and a few others, but in the end...
 
 # Conclusion : On Scope-Creep and Rabbit Holes
 

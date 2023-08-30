@@ -19,7 +19,7 @@ I recently implemented the famous Marching Cubes algorithm ([Wikipedia](https://
 Expressions work on `float3` values. Any computation expecting a float will use the `x` coordinate.
 
 An expression has fixed parameters provided by the code using it (e.g., the time `t` or an index `i`). Any name in the expression that is not a function or a parameter creates a named value, which is either a constant or a nested formula.
-![A formula with one parameter and 3 named values](inspector.png)
+![A formula with one parameter and 3 named values](./inspector.png)
 
 The string input gets parsed as an AST, which is then converted to a flat array of instructions. That array is evaluated.
 

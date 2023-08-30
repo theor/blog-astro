@@ -7,11 +7,23 @@ description: ""
 banner: "banner.webp"
 tags: ["doom", "rust"]
 ---
+import { Image } from 'astro:assets';
+import case1 from "./case1.webp";
+import case2 from "./case2.webp";
+import case3 from "./case3.webp";
+import halton1 from "./halton-11.svg";
+import halton2 from "./halton-17.svg";
+import halton3 from "./halton-23.svg";
+import halton4 from "./halton-1_5-11.svg";
+import halton5 from "./halton-1_5-17.svg";
+import halton6 from "./halton-1_5-23.svg";
+import e1m1 from "./E1M1.svg";
+
 I've heard a lot about classic Doom's data format and decided to write some Rust code to extract its maps and convert that to vector graphics I could laser cut. 
 
 I'll go through the process, from the data extraction to the geometry reconstruction to outputting laser-cuttable SVGs, including the geometrical dead end I enthusiastically ran to when I tried to preview the result using [bevy](https://bevyengine.org/).
 
-![3D render of a doom map, e1m1](banner.webp)
+![3D render of a doom map, e1m1](./banner.webp)
 
 # DOOM WAD format
 
@@ -103,7 +115,7 @@ For laser cutting, I need :
 - another for _positioning lines_. Some layers contain loose parts I'll need to correctly position before glueing them ; the positioning lines draw those pieces'position on the layer underneath.
 
 This is the result for E1M1, with the internal lines in red and the positioning lines in cyan:
-<img src="./E1M1.svg"/>
+<Image src={e1m1} alt="E1M1 SVG"/>
 
 
 ## Interlude: Halton sequence
@@ -129,12 +141,12 @@ for i in 0..sectors.len() {
 It is similar to using a pseudorandom generator with a fixed seed, but the Halton sequence is more evenly distributed. Here is the result for 100 values with a few base/f combinations :
 
 <div class="gallery">
-<Figure caption="base = 11 , f = 1" src="./halton-11.svg" />
-<Figure caption="base = 17 , f = 1" src="./halton-17.svg" />
-<Figure caption="base = 23 , f = 1" src="./halton-23.svg" />
-<Figure caption="base = 11 , f = 1.5" src="./halton-1_5-11.svg" />
-<Figure caption="base = 17 , f = 1.5" src="./halton-1_5-17.svg" />
-<Figure caption="base = 23 , f = 1.5" src="./halton-1_5-23.svg" />
+<Figure caption="base = 11 , f = 1" src={halton1} />
+<Figure caption="base = 17 , f = 1" src={halton2} />
+<Figure caption="base = 23 , f = 1" src={halton3} />
+<Figure caption="base = 11 , f = 1.5" src={halton4} />
+<Figure caption="base = 17 , f = 1.5" src={halton5} />
+<Figure caption="base = 23 , f = 1.5" src={halton6} />
 </div>
 
 # Today's rabbit hole: 3D rendering and triangulation
@@ -148,13 +160,14 @@ First, let's look at the DOOM polygons three cases:
 1. a _simple_ polygon, which has a specific definition ([Wikipedia](https://en.wikipedia.org/wiki/Simple_polygon)) :
     - exactly two edges meet at each vertex
     - the number of edges equals the number of vertices
-<img src="./case1.webp" alt="Case 1, a simple polygon" width="30%"/>
+
+<Image src={case1} width="400" alt="[Case 1, a simple polygon]" />
 
 2. one polygon with holes (called "weakly simple polygons" in the most basic case akin to a disc). This means the sector represents multiple polygons where one contains the others
-<img src="./case2.webp" alt="Case 1, a simple polygon" width="30%"/>
+<Image src={case2} width="400" alt="[Case 1, a simple polygon]" />
 
 3. multiple polygons sharing one vertex - to be accurate multiple polygons where each pair share at most _one_ contiguous vertex, which makes it a _complex_ polygon. The fact that the edges intersections are vertices means the polygon can be split into simple polygons.
-<img src="./case3.webp" alt="Case 1, a simple polygon" width="30%"/>
+<Image src={case3} width="400" alt="[Case 1, a simple polygon]" />
 
 
 The `triangulate` crate (and, AFAIK, all other implementations) needs actual paths - an _ordered_ list of vertices. It also does not support non-simple polygons, which excludes case 3.
@@ -195,4 +208,4 @@ I gave up on that approach at this point. The solution to the preview, a very va
 
 Just have to glue it now ! I definitely need to try it with clear acry lic or with multiple colors.
 
-![result](laser.jpg)
+![result](./laser.jpg)
