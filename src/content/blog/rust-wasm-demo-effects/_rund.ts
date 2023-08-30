@@ -1,5 +1,5 @@
 import { string } from "astro/zod";
-import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette } from "./_pkg/sample_rust";
+import init, { Stars,init_rocket } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
@@ -162,10 +162,19 @@ async function roads2(x: HTMLElement, memory: WebAssembly.Memory) {
     ).create();
 }
 
-function stars(x: HTMLElement, memory: WebAssembly.Memory) {
+async function stars(x: HTMLElement, memory: WebAssembly.Memory) {
     const WIDTH = 512;
     const HEIGHT = 512;
-    const p = new Stars(WIDTH, HEIGHT);
+    const bgUrl = x.dataset["planet"]!;
+    const bgBitmap = await loadBitmap(bgUrl);
+
+
+    console.log(x.dataset)
+    const stars_rocket = await ((await fetch(x.dataset["starsRocket"]!)).blob())
+    console.log(stars_rocket)
+    init_rocket(new Uint8Array(await stars_rocket.arrayBuffer()));
+
+    const p = new Stars(WIDTH, HEIGHT, bgBitmap.data);
     new WasmHost(
         "Stars",
         x,
@@ -190,7 +199,9 @@ function stars(x: HTMLElement, memory: WebAssembly.Memory) {
                 buffer: <ImageData | undefined>undefined,
             };
 
-
+canvas.addEventListener('pointerdown', e => {
+    p.start_audio();
+});
             canvas.addEventListener('pointermove', e => {
                 const bb = canvas.getBoundingClientRect();
                 const x = (e.clientX - bb.left) / bb.width;
@@ -318,6 +329,8 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
 init().then(async wasm => {
     console.log("init", wasm);
     for (let x of document.querySelectorAll("div[data-sample]")) {
+        try {
+            
         const elt = x as HTMLElement;
         const sample = (elt.dataset["sample"] ?? Sample.Fire) as Sample;
         switch (sample) {
@@ -422,6 +435,9 @@ init().then(async wasm => {
                 x.innerHTML = "unknown";
                 break;
         }
+    } catch (error) {
+        
+    }
     };
 });
 // customElements.define("astro-greet", AstroGreet);
