@@ -25,12 +25,12 @@ cargo watch -s "wasm-pack build --profiling --target web -d blog-astro/src/conte
 ```
 
 About arguments:
-- I use `--profiling` to get function names when profiling in Chrome. Never used `--debug` ; I don't know if I got too much in the oldskool mindset, but I didn't even searched how to attach a debugger with WASM, or if it is even possible
+- I use `--profiling` to get function names when profiling in Chrome. I never used `--debug` ; I don't know if I got too much in the oldskool mindset, but I didn't even searched how to attach a debugger with WASM, or if it is even possible
 - `--target web` outputs wasm ready for the browser. Didn't get `--target bundler` to work with Astro
 - I did write my glue code in Typescript, but the ts typings that wasm-build outputs made Astro choke on a const with no value
 - `--no-pack` prevents the generation of a `package.json` file, which IIUC is used when publishing npm packages. It also made Astro choke
 
-The resulting .js files exports an `init` promise loading the actual wasm, and everything exported by the rust code.
+The resulting .js files export both an `init` promise loading the actual wasm and every symbol exported by the rust code.
 
 Rust exports are made using `wasm-bindgen` :
 
@@ -67,9 +67,9 @@ The plasma effect is typical of demo effects: trivial to do today with a GPU, im
 <YouTube id="cEFDKup7il8"/>
 
 
-The gist of it is to compute a color for each pixel using some combination of trigonometric functions ; usually, the function returns a valueused as an index in a pre-computed palette. An indexed palette used to be a requirement - the above Amstrad CPC had at best at 16 colors palette out of 27, in Mode 0 (160x200 pixels) before using any of the typical palette-expanding tricks of the time. However palette indexing is still more performant today, and gives other opportunities like [palette shifting (more details in my esp32/demoscene article)](/esp32-love-notes-demoscene/#tooling-for-palette-indexed-bitmaps).
+The gist of it is to compute a color for each pixel using some combination of trigonometric functions; usually, the function returns a value used as an index in a pre-computed palette. An indexed palette used to be a requirement - the above Amstrad CPC had at best a 16-color palette out of 27, in Mode 0 (160x200 pixels) before using any of the typical palette-expanding tricks of the time. However, palette indexing is still more performant today and gives other opportunities like [palette shifting (more details in my esp32/demoscene article)](/esp32-love-notes-demoscene/#tooling-for-palette-indexed-bitmaps).
 
-Let's start with simple concentric circles and a grey scale palette. The palette is a simple lerp outputting ABGR colors as `u32`, as the HTML canvas expects that format:
+Let's start with simple concentric circles and a greyscale palette. The palette is a simple lerp outputting ABGR colors as `u32`, as the HTML canvas expects that format:
 
 ```rust
 
@@ -235,34 +235,157 @@ for i in 0..PALETTE_SIZE {
 <Run data-sample="Plasma" data-palette="RainbowStepped"/>
 
 
-The real bottleneck, is the massive amount of `sin/cos` calls. I tried to implement a precomputed look-up table for the trigonometry as [we used to](https://namoseley.wordpress.com/2015/07/26/sincos-generation-using-table-lookup-and-iterpolation/) but Rust's own trig is still twice as fast. Maybe I'll investigate, there's a potential article here...
+The real bottleneck is the massive amount of `sin/cos` calls. I tried to implement a precomputed look-up table for the trigonometry as [we used to](https://namoseley.wordpress.com/2015/07/26/sincos-generation-using-table-lookup-and-iterpolation/) but Rust's own trig is still twice as fast. Maybe I'll investigate, there's a potential article here...
 
 # Fire effect
 
 <Run id="asd3" data-sample="firestate" data-message="wwwww"/>
 
-Another classic effect. [Fabien Sanglard](https://fabiensanglard.net/doom_fire_psx/index.html) talks in length about its principle, as done in the PXS port of Doom.
+Another classic effect. [Fabien Sanglard](https://fabiensanglard.net/doom_fire_psx/index.html) talks in length about its principle, as done in the PSX port of Doom.
 
-At its core, it's a [cellular automaton](https://en.wikipedia.org/wiki/Cellular_automaton) : a grid where each cell evolves according to its neighbours. The difference with Conway's is that cell values aren't just binary, but values over a range used to index a palette. Values are propagated upward, with a bit of horizontal randomization, and attenuated.
+At its core, it's a [cellular automaton](https://en.wikipedia.org/wiki/Cellular_automaton) : a grid where each cell evolves according to its neighbors. The difference with Conway's is that cell values aren't just binary, but values over a range used to index a palette. Values are propagated upward, with a bit of horizontal randomization, and attenuated.
 
 # Stars
 
 <Run data-sample="Stars" />
 
-The earlier instance I found is in [Spacewar! on PDP-1](https://www.markwrobel.dk/post/amiga-machine-code-letter12-starfield-effect/). Draw dots on the screen, move them away from the center of the screen to simulate perspective.
+The earlier instance I found is in [Spacewar! on PDP-1](https://www.markwrobel.dk/post/amiga-machine-code-letter12-starfield-effect/). Draw dots on the screen, and move them away from the center of the screen to simulate perspective.
 
-Instead of simple points, I draw lines to give a feeling of speed, and make that speed change over time. the point of perspective is changed over time and when moving the cursor. I like the lo-fi star wars hyperdrive vibe.
+Instead of simple points, I draw lines between the previous and the current position to give a feeling of speed and make that speed change over time. The point of perspective is changed over time and when moving the cursor. I like the lo-fi Star Wars hyperdrive vibe.
+
+Each star is stored in polar coordinates, an angle and a radius. This is a good opportunity for an interactive SVG visualization test :
+
+<Run data-sample="Angles" />
+
+Then it's a matter of keeping an array of stars, incrementing the distance to the center each frame and resetting it when that distance is out of bounds :
+
+<Run data-sample="Stars" data-step="Radial" />
+
+
+By using the previous position as the start of a line to the current position, we get a feeling of speed. Line drawing is an arcane art, and the reference is the [Bresenham algorithm](https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm). Here I used [Xiaolin Wu's line algorithm](https://en.wikipedia.org/wiki/Xiaolin_Wu%27s_line_algorithm), which also does anti-aliasing, by returning an alpha value for each pixel along the line.
+
+The last only things missing are the planets (created using [deepfold's planet generator](https://deep-fold.itch.io/pixel-planet-generator)), which take a primitive sprite drawing algorithm. I implemented scaled drawing but not rotation, which would have made it a proper [rotozoom](https://www.ferzkopp.net/Software/SDL_rotozoom/).
+
+The bitmap data itself is loaded asynchronously, by abusing the HTML image element, then extracting the image data and caching it:
+
+```js
+interface Bitmap {
+    w: number,
+    h: number,
+    data: Uint32Array,
+}
+
+const bitmapCache = new Map<string, Promise<Bitmap>>();
+
+async function loadBitmap(name: string): Promise<Bitmap> {
+    if (bitmapCache.has(name)) {
+        return bitmapCache.get(name)!;
+    }
+    const p = new Promise<Bitmap>((resolve, reject) => {
+        // <img> html element
+        const image = new Image();
+
+        // we'll need a canvas to extract the raw pixels from the image
+        const canvas = document.createElement("canvas");
+
+        image.onload = () => {
+            canvas.width = image.width;
+            canvas.height = image.height;
+
+            const ctx = canvas.getContext('2d')!;
+            ctx.drawImage(image, 0, 0);
+
+            // raw u32 pixels
+            const data = new Uint32Array(ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height,).data.buffer);
+            resolve({
+                w: image.width,
+                h: image.height,
+                data: data,
+            });
+        };
+        image.onerror = e => reject(e);
+        // triggers the actual loading
+        image.src = name;
+
+    });
+    bitmapCache.set(name, p);
+    return p;
+}
+```
 
 # Outrun 3d roads
 
 <Run data-sample="Roads"/>
 
-Credit: background from [Panda](https://pixeljoint.com/pixelart/39681.htm), tree from the original Outrun game
+Credit: background from [Panda](https://pixeljoint.com/pixelart/39681.htm), tree from the original Outrun game. Use the keyboard arrows!
 
-[Lou's pseudo 3d page](http://www.extentofthejam.com/pseudo/)
+OutRun made a big splash when it was released by Sega in 1986, and part of that was the 3D rendering. It's a form of raycasting: starting from the bottom of the screen, find the road segment by projecting the screen position and draw it with the right height and horizontal offset according to the player's position.
+
+[Lou's pseudo 3d page](http://www.extentofthejam.com/pseudo/) is a great resource to dive into that, so I won't repeat it here.
 
 # Today's rabbit hole : Wasm interop optimization
 
-https://github.com/rustwasm/wasm-bindgen/issues/2439
+If the performance of Rust code compiled to WASM was a good surprise, the first issue I encountered was the cost of passing arrays from JS. My initial approach to canvas drawing was a function taking the canvas' ImageData buffer as a `&mut [u8]` slice. My understanding is that `wasm-bindgen` copies the data in and out of WASM, which could take several milliseconds for a 640x480 framebuffer.
 
-# Another rabbit hole : macros and reflection 
+I considered creating the canvas from rust code, but adding a dependency on [web-sys](https://rustwasm.github.io/wasm-bindgen/web-sys/index.html) came with tens of kilobytes in the resulting wasm. The current .wasm file, containing *all* the demos, is a 61kb file.
+
+The best solution I found is to allocate the framebuffer from rust as a `Vec`, create a `wasm-bindgen` exposed method returning the offset of the vec in the wasm memory and construct the canvas ImageData from that offset and the wasm memory pointer:
+
+```rust
+struct Demo {
+    w: usize,
+    h: usize,
+    buffer: Vec<u32>,
+}
+
+impl Demo {
+    #[wasm_bindgen(constructor)]
+    pub fn new(w: usize, h: usize) -> Self {
+        Self {
+            w,
+            h,
+            buffer: vec![0; w*h],
+        }
+    }
+    // even if ImageData expects a u8 buffer, we can just reinterpret-cast it from the js side
+    // ugly, but it works
+    #[wasm_bindgen]
+    pub fn get_ptr(&self) -> *const u32 { self.buffer.as_ptr() }
+
+    #[wasm_bindgen]
+    pub fn update(&mut self) {
+        self.buffer.fill(0);
+    }
+}
+
+```
+
+```ts
+// startup
+const demo = new Demo(WIDTH, HEIGHT);
+const data = {
+    buffer: <ImageData | undefined>undefined
+};
+// each frame
+demo.update();
+
+// the wasm memory is reallocated/invalidated after an allocation?
+// see https://github.com/rustwasm/wasm-bindgen/issues/2439
+if (!data.buffer || data.buffer.data.byteLength === 0) {
+    // no allocation as we provide the pre-allocated buffer
+    let raw_buffer = new Uint8ClampedArray(
+        // the entire sandboxed memory of the wasm app
+        memory.buffer,
+        // our method to get the framebuffer offset in that memory
+        p.get_ptr(),
+        // 4 bytes per pixel
+        WIDTH * HEIGHT * 4
+    );
+    data.buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
+}
+canvasContext.putImageData(data.buffer, 0, 0);
+```
+
+# Conclusion
+
+There's much more to do (benchmark wasm-compiled trigonometry functions, compile rust in no-std mode to reduce even more the binary size, ...) but that's all for now. Maybe I'll write on my experiment plugging the [GNU-Rocket sync tracker](https://github.com/rocket/rocket) in there, and this article is a good prelude to my fascination with [fantasy consoles](https://github.com/paladin-t/fantasy), but I'll stop here for now!

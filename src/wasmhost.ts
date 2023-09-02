@@ -109,6 +109,7 @@ export class WasmHost<T, TD extends { paused: boolean }> implements IWasmHost {
         if (this.div.hasAttribute("data-created")) {
             if (this.onUpdate && this.data)
                 (this.data as any).paused = false;
+            this.pane?.refresh();
             return;
         }
 
