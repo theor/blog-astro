@@ -24,10 +24,10 @@ export const findImage = async (imagePath?: string) => {
   // }
 
   const images = await fetchLocalImages();
-  // console.log("find ", imagePath)
   const key = `./content/blog/${imagePath}`; //.replace('~/', '/src/');
+  console.log("find ", imagePath, key, images[key], await images[key]())
   return typeof images[key] === "function"
-    ? (await images[key]())["default"]
+    ? (await images[key]())["default"].src
     : null;
 };
 
