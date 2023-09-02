@@ -9,13 +9,14 @@ import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 type Props = CollectionEntry<"blog"> & {remarkPluginFrontmatter: Record<string, any>};
 const { title, description, pubDate, updatedDate, heroImage, banner, staticBanner } = Astro.props.data;
 const {slug,remarkPluginFrontmatter } = Astro.props;
-console.warn("STATIC ",staticBanner, banner, staticBanner ? staticBanner : banner)
+const bannerImage = staticBanner ? staticBanner : banner;
+console.warn("STATIC ",staticBanner, banner, bannerImage)
 ---
 
 <html lang="en">
   <head>
     <BaseHead title={title} description={remarkPluginFrontmatter?.abstract || description}
-     image={await findImage(slug + "/" + (staticBanner ? staticBanner : banner))} 
+     image={bannerImage && await findImage(slug + "/" + bannerImage)} 
      />
     <style>
       .title {

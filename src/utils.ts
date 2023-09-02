@@ -15,6 +15,8 @@ export const fetchLocalImages = async () => {
 };
 
 export const findImage = async (imagePath?: string) => {
+  if(!imagePath)
+    return null;
   // if (typeof imagePath !== 'string') {
   //   return null;
   // }
@@ -26,7 +28,7 @@ export const findImage = async (imagePath?: string) => {
   const images = await fetchLocalImages();
   const key = `./content/blog/${imagePath}`; //.replace('~/', '/src/');
   console.log("find ", imagePath, key, images[key], await images[key]())
-  return typeof images[key] === "function"
+  return images[key] && typeof images[key] === "function"
     ? (await images[key]())["default"].src
     : null;
 };
