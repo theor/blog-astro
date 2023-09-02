@@ -1,4 +1,4 @@
-import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette } from "./_pkg/sample_rust";
+import init, { Plasma, StatefulFire, Stars, Roads2, Step, Palette, StarsStep, draw_angles } from "./_pkg/sample_rust";
 import { WasmHost } from "@/wasmhost";
 const WIDTH = 32 * 4;
 const HEIGHT = 32 * 4;
@@ -11,6 +11,7 @@ enum Sample {
     FireState = "firestate",
     Svg = "svg",
     Roads = "Roads",
+    Angles = "Angles",
 
 }
 interface Bitmap {
@@ -166,12 +167,13 @@ async function stars(x: HTMLElement, memory: WebAssembly.Memory) {
     const WIDTH = 512;
     const HEIGHT = 512;
     const bgUrl = x.dataset["planet"]!;
+    const step = (StarsStep as any)[x.dataset["step"] ?? "All"];
     const bgBitmap = await loadBitmap(bgUrl);
 
 
     console.log(x.dataset)
 
-    const p = new Stars(WIDTH, HEIGHT, bgBitmap.data);
+    const p = new Stars(WIDTH, HEIGHT, bgBitmap.data, step);
     new WasmHost(
         "Stars",
         x,
@@ -192,13 +194,10 @@ async function stars(x: HTMLElement, memory: WebAssembly.Memory) {
                 paused: false,
                 t: 0, ctx: canvas.getContext('2d')!,
                 mousePos: [0, 0],
-                speed_factor: 0.06,
+                speed_factor: step == StarsStep.Radial ? 0.01 : 0.06,
                 buffer: <ImageData | undefined>undefined,
             };
 
-canvas.addEventListener('pointerdown', e => {
-    p.start_audio();
-});
             canvas.addEventListener('pointermove', e => {
                 const bb = canvas.getBoundingClientRect();
                 const x = (e.clientX - bb.left) / bb.width;
@@ -327,114 +326,178 @@ init().then(async wasm => {
     console.log("init", wasm);
     for (let x of document.querySelectorAll("div[data-sample]")) {
         try {
-            
-        const elt = x as HTMLElement;
-        const sample = (elt.dataset["sample"] ?? Sample.Fire) as Sample;
-        switch (sample) {
-            case Sample.Roads:
-                await roads2(elt, wasm.memory);
-                break;
-            case Sample.Stars:
-                stars(elt, wasm.memory);
-                break;
-            case Sample.Plasma:
-                await plasma(elt, elt.dataset, wasm.memory);
-                break;
 
-            case Sample.FireState:
-                const sf = new StatefulFire(WIDTH, HEIGHT);
-                const palette = new Uint8Array(37 * 3);
-                for (let index = 0; index < 37; index++) {
-                    let c = [
-                        Math.round(index / 37.0 * 255),
-                        Math.round(255 - index / 37.0 * 255),
-                        0];
-                    palette[index * 3 + 0] = c[0];
-                    palette[index * 3 + 1] = c[1];
-                    palette[index * 3 + 2] = c[2];
+            const elt = x as HTMLElement;
+            const sample = (elt.dataset["sample"] ?? Sample.Fire) as Sample;
+            switch (sample) {
+                case Sample.Roads:
+                    await roads2(elt, wasm.memory);
+                    break;
+                case Sample.Stars:
+                    stars(elt, wasm.memory);
+                    break;
+                case Sample.Plasma:
+                    await plasma(elt, elt.dataset, wasm.memory);
+                    break;
 
-                }
-                // sf.set_palette(palette);
-                new WasmHost("Fire", elt,
-                    sf.update.bind(sf),
-                    (div, pane) => {
-                        const canvas = document.createElement("canvas");
-                        canvas.width = WIDTH;
-                        canvas.height = HEIGHT;
-                        canvas.style.width = "100%";
-                        canvas.style.touchAction = "none";
-                        // canvas.style.width = `${WIDTH * 4}px`;
-                        // canvas.style.height = `${HEIGHT * 4}px`;
-                        div.appendChild(canvas);
+                case Sample.FireState:
+                    const sf = new StatefulFire(WIDTH, HEIGHT);
+                    const palette = new Uint8Array(37 * 3);
+                    for (let index = 0; index < 37; index++) {
+                        let c = [
+                            Math.round(index / 37.0 * 255),
+                            Math.round(255 - index / 37.0 * 255),
+                            0];
+                        palette[index * 3 + 0] = c[0];
+                        palette[index * 3 + 1] = c[1];
+                        palette[index * 3 + 2] = c[2];
 
-                        const fireBuffer = new Uint8Array(WIDTH * HEIGHT);
+                    }
+                    // sf.set_palette(palette);
+                    new WasmHost("Fire", elt,
+                        sf.update.bind(sf),
+                        (div, pane) => {
+                            const canvas = document.createElement("canvas");
+                            canvas.width = WIDTH;
+                            canvas.height = HEIGHT;
+                            canvas.style.width = "100%";
+                            canvas.style.touchAction = "none";
+                            // canvas.style.width = `${WIDTH * 4}px`;
+                            // canvas.style.height = `${HEIGHT * 4}px`;
+                            div.appendChild(canvas);
 
-                        const data = {
-                            paused: false,
-                            canvas: canvas,
-                            buffer: <ImageData | undefined>undefined,
-                            ctx: canvas.getContext('2d')!,
-                            x: { min: -1, max: 3 },
-                            t: 0,
-                            r: 5,
-                            fireBuffer: fireBuffer,
-                            mousePos: [WIDTH / 2, HEIGHT / 2],
-                            c: { r: 0, g: 0, b: 0 },
-                            attenuation: 1,
-                        };
+                            const fireBuffer = new Uint8Array(WIDTH * HEIGHT);
 
-                        if (pane) {
-                            pane.addInput(data, "r", { label: "mouse radius", min: 1, max: 50, step: 1 });
-                            pane.addMonitor(data, "t");
-                            pane.addInput(data, "attenuation", { min: 0, max: 8, step: 1 });
-                            pane.addInput(data, "x", { min: -8, max: 8, step: 1 });
-                        }
+                            const data = {
+                                paused: false,
+                                canvas: canvas,
+                                buffer: <ImageData | undefined>undefined,
+                                ctx: canvas.getContext('2d')!,
+                                x: { min: -1, max: 3 },
+                                t: 0,
+                                r: 5,
+                                fireBuffer: fireBuffer,
+                                mousePos: [WIDTH / 2, HEIGHT / 2],
+                                c: { r: 0, g: 0, b: 0 },
+                                attenuation: 1,
+                            };
 
-                        // canvas.addEventListener('mousemove', e => {
-                        //     const bb = canvas.getBoundingClientRect();
-                        //     const x = Math.floor((e.clientX - bb.left) / bb.width * canvas.width);
-                        //     const y = Math.floor((e.clientY - bb.top) / bb.height * canvas.height);
+                            if (pane) {
+                                pane.addInput(data, "r", { label: "mouse radius", min: 1, max: 50, step: 1 });
+                                pane.addMonitor(data, "t");
+                                pane.addInput(data, "attenuation", { min: 0, max: 8, step: 1 });
+                                pane.addInput(data, "x", { min: -8, max: 8, step: 1 });
+                            }
 
-                        //     data.mousePos = [x, y];
-                        // });
-                        canvas.addEventListener('pointermove', e => {
-                            const bb = canvas.getBoundingClientRect();
-                            const x = Math.floor((e.clientX - bb.left) / bb.width * canvas.width);
-                            const y = Math.floor((e.clientY - bb.top) / bb.height * canvas.height);
+                            // canvas.addEventListener('mousemove', e => {
+                            //     const bb = canvas.getBoundingClientRect();
+                            //     const x = Math.floor((e.clientX - bb.left) / bb.width * canvas.width);
+                            //     const y = Math.floor((e.clientY - bb.top) / bb.height * canvas.height);
 
-                            data.mousePos = [x, y];
-                        });
+                            //     data.mousePos = [x, y];
+                            // });
+                            canvas.addEventListener('pointermove', e => {
+                                const bb = canvas.getBoundingClientRect();
+                                const x = Math.floor((e.clientX - bb.left) / bb.width * canvas.width);
+                                const y = Math.floor((e.clientY - bb.top) / bb.height * canvas.height);
 
-                        return data;
-                    },
-                    (data, f) => {
-                        sf.circle(data.mousePos[0], data.mousePos[1], data.r);
+                                data.mousePos = [x, y];
+                            });
 
-                        f(data.t, data.attenuation, data.x.min, data.x.max);
+                            return data;
+                        },
+                        (data, f) => {
+                            sf.circle(data.mousePos[0], data.mousePos[1], data.r);
 
-                        if (!data.buffer || data.buffer.data.byteLength === 0) {
-                            console.log("REALLOC FIRE");
-                            let raw_buffer = new Uint8ClampedArray(wasm.memory.buffer, sf.get_ptr(), WIDTH * HEIGHT * 4);
-                            data.buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
-                        }
+                            f(data.t, data.attenuation, data.x.min, data.x.max);
 
-                        data.ctx.putImageData(data.buffer, 0, 0);
-                    },
+                            if (!data.buffer || data.buffer.data.byteLength === 0) {
+                                console.log("REALLOC FIRE");
+                                let raw_buffer = new Uint8ClampedArray(wasm.memory.buffer, sf.get_ptr(), WIDTH * HEIGHT * 4);
+                                data.buffer = new ImageData(raw_buffer, WIDTH, HEIGHT);
+                            }
 
-                    (data, t) => {
-                        data.t = t;
+                            data.ctx.putImageData(data.buffer, 0, 0);
+                        },
 
-                    }).create();
+                        (data, t) => {
+                            data.t = t;
 
-                break;
+                        }).create();
 
-            default:
-                x.innerHTML = "unknown";
-                break;
+                    break;
+                case Sample.Angles:
+                    {
+                        const WIDTH = 256;
+                        const C = WIDTH / 2;
+                        new WasmHost(
+                            "Angles",
+                            x as HTMLElement,
+                            (circle: SVGElement, line: SVGElement, r: number, a: number) => {
+                                circle.setAttribute("r", '' + (r * WIDTH));
+                                line.setAttribute("x2",'' + (C + Math.cos(a) * r * WIDTH));
+                                line.setAttribute("y2",'' + (C + Math.sin(a) * r * WIDTH));
+
+                            },
+                            (div, pane) => {
+
+                                function getNode(n: string, v?: any) {
+                                    let node = document.createElementNS("http://www.w3.org/2000/svg", n);
+                                    if (v)
+                                        for (var p in v)
+                                            node.setAttributeNS(null, p.replace(/[A-Z]/g, function (m, p, o, s) { return "-" + m.toLowerCase(); }), v[p]);
+                                    return node
+                                }
+                                const svg = getNode("svg", { width: WIDTH, height: WIDTH, version: "1.1", viewBox: "-10 -10 100 100" });
+                                const circle = getNode("circle", { r: C, cx: C, cy: C, stroke: "grey", fill: "transparent" });
+                                const line = getNode("line", { x1: C, y1: C, x2: WIDTH, y2: C, stroke: "darkgrey", strokeWidth: "2%", strokeLinecap: "round" });
+                                svg.appendChild(line)
+                                svg.appendChild(circle)
+                                svg.style.touchAction = "none";
+                                svg.addEventListener("pointermove", e => {
+                                    const bb = svg.getBoundingClientRect();
+                                    const x = (e.clientX - bb.left) / bb.width - 0.5;
+                                    const y = (e.clientY - bb.top) / bb.height - 0.5;
+                                    data.r =Math.min(0.5, Math.sqrt(x * x + y * y));
+                                    data.a = Math.atan2(y, x);
+                                    while(data.a < 0) data.a += Math.PI*2;
+                                    while(data.a > Math.PI*2) data.a -= Math.PI*2;
+                                    pane?.refresh();
+                                });
+                                div.appendChild(svg);
+                                const data = {
+                                    paused: false,
+                                    r: 0.4,
+                                    a: Math.PI / 4,
+                                    line: line,
+                                    circle: circle,
+                                };
+
+                                if (pane) {
+                                    pane.addInput(data, "a", { label: "angle", min: 0, max: Math.PI * 2, step: 0.1 });
+                                    pane.addInput(data, "r", { label: "radius", min: 0, max: 0.5 });
+                                }
+                                return data;
+                            }, (data, f) => {
+                                // console.log("asdasd")
+
+                                f(data.circle, data.line, data.r, data.a);
+                                // const arr = new Uint32Array(data.buffer.data.buffer);
+                                // f(arr, WIDTH, data.a, data.r);
+
+                                // data.ctx.putImageData(data.buffer, 0, 0);
+                            },
+                            (data, t) => { }
+                        ).create();
+                    }
+                    break;
+                default:
+                    x.innerHTML = "unknown";
+                    break;
+            }
+        } catch (error) {
+
         }
-    } catch (error) {
-        
-    }
     };
 });
 // customElements.define("astro-greet", AstroGreet);

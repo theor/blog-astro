@@ -1,9 +1,5 @@
 let wasm;
 
-const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
-
-if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
-
 let cachedUint8Memory0 = null;
 
 function getUint8Memory0() {
@@ -12,6 +8,35 @@ function getUint8Memory0() {
     }
     return cachedUint8Memory0;
 }
+
+function getArrayU8FromWasm0(ptr, len) {
+    ptr = ptr >>> 0;
+    return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
+}
+
+const heap = new Array(128).fill(undefined);
+
+heap.push(undefined, null, true, false);
+
+function getObject(idx) { return heap[idx]; }
+
+let heap_next = heap.length;
+
+function dropObject(idx) {
+    if (idx < 132) return;
+    heap[idx] = heap_next;
+    heap_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropObject(idx);
+    return ret;
+}
+
+const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+
+if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); };
 
 function getStringFromWasm0(ptr, len) {
     ptr = ptr >>> 0;
@@ -54,6 +79,30 @@ function getArrayU32FromWasm0(ptr, len) {
     ptr = ptr >>> 0;
     return getUint32Memory0().subarray(ptr / 4, ptr / 4 + len);
 }
+
+function addHeapObject(obj) {
+    if (heap_next === heap.length) heap.push(heap.length + 1);
+    const idx = heap_next;
+    heap_next = heap[idx];
+
+    heap[idx] = obj;
+    return idx;
+}
+/**
+* @param {Uint32Array} buffer
+* @param {number} w
+* @param {number} a
+* @param {number} r
+*/
+export function draw_angles(buffer, w, a, r) {
+    var ptr0 = passArray32ToWasm0(buffer, wasm.__wbindgen_malloc);
+    var len0 = WASM_VECTOR_LEN;
+    wasm.draw_angles(ptr0, len0, addHeapObject(buffer), w, a, r);
+}
+
+/**
+*/
+export const StarsStep = Object.freeze({ Radial:0,"0":"Radial",All:1,"1":"All", });
 /**
 */
 export const Step = Object.freeze({ FixedCircle:0,"0":"FixedCircle",ShiftedCircle:1,"1":"ShiftedCircle",Perturbation:2,"2":"Perturbation",All:3,"3":"All", });
@@ -212,11 +261,12 @@ export class Stars {
     * @param {number} w
     * @param {number} h
     * @param {Uint32Array} sprite
+    * @param {number} step
     */
-    constructor(w, h, sprite) {
+    constructor(w, h, sprite, step) {
         const ptr0 = passArray32ToWasm0(sprite, wasm.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.stars_new(w, h, ptr0, len0);
+        const ret = wasm.stars_new(w, h, ptr0, len0, step);
         return Stars.__wrap(ret);
     }
     /**
@@ -333,6 +383,12 @@ async function __wbg_load(module, imports) {
 function __wbg_get_imports() {
     const imports = {};
     imports.wbg = {};
+    imports.wbg.__wbindgen_copy_to_typed_array = function(arg0, arg1, arg2) {
+        new Uint8Array(getObject(arg2).buffer, getObject(arg2).byteOffset, getObject(arg2).byteLength).set(getArrayU8FromWasm0(arg0, arg1));
+    };
+    imports.wbg.__wbindgen_object_drop_ref = function(arg0) {
+        takeObject(arg0);
+    };
     imports.wbg.__wbindgen_throw = function(arg0, arg1) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
