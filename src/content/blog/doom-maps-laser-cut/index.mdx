@@ -27,12 +27,12 @@ I'll go through the process, from the data extraction to the geometry reconstruc
 
 # DOOM WAD format
 
-DOOM's data was designed with modding as a goal : the entire game is an executable and a `.WAD` data pack. The shareware/demo version shipped with DOOM1.WAD, which is still available freely.
+DOOM's data was designed with modding as a goal: the entire game is an executable and a `.WAD` data pack. The shareware/demo version shipped with DOOM1.WAD, which is still available freely.
 
 <Video caption="Doom WAD format, illustrated with MotionCanvas" width="100%" height="auto" src={import("./wad.m4v")}/>
 
 The WAD format is well documented - see the [Unofficial DOOM spec](https://www.gamers.org/dhs/helpdocs/dmsp1666.html) or the [ZDoom wiki](https://zdoom.org/wiki/WAD). The gist of it is :
-- the WAD file starts with a header follow by the actual data, ends with directory entries describing that data
+- the WAD file starts with a header followed by the actual data, ends with directory entries describing that data
 - the header contains a pointer to the first directory entry and the entry count
 - each directory entry contains a pointer to the data and its size
 
@@ -91,19 +91,19 @@ let things: Vec<Thing> = wad.parse_lump("THINGS", thing::parse_thing);
 
 # Geometry
 
-Getting line segments is relatively easy (group `linedefs` by `sidedef.sector`). However, I also intend to group sectors by similar floor heights to reduce the layer count and I need to mark edges as cut or engrave lines if they are polygon borders or internal lines. 
+Getting line segments is relatively easy (group `linedefs` by `sidedef.sector`). However, I also intend to group sectors by similar floor heights to reduce the layer count and I need to mark edges as cut or engraved lines if they are polygon borders or internal lines. 
 
-The parsed WAD data is an unordered collection of edges. We have a guarantee that edges won't cross. Merging polygons is just a set union, and removing internal lines is a matter of finding duplicate edges in a polygon.
+The parsed WAD data is an unordered collection of edges. We have a guarantee that the edges won't cross. Merging polygons is just a set union, and removing internal lines is a matter of finding duplicate edges in a polygon.
 
 Strictly speaking, this is enough to produce a SVG that can be laser cut.
 
 # Reducing the layer count
 
-It is now time to separate sectors into layers, according to their floor height. This is done by providing an array of heights and grouping sectors by the smallest upper bound, eg. I used `[-70, -24, 0, 40]` for E1M1.
+It is now time to separate sectors into layers, according to their floor height. This is done by providing an array of heights and grouping sectors by the smallest upper bound, e.g. I used `[-70, -24, 0, 40]` for E1M1.
 
-It could be automated, but I went for artistic control. Sectors could be sorted by ascending height, then split into groups of similar size. That group size could be in function of sector counts or areas. Another criteria could be the sector properties - if a sector is flagged as causing damage (acid, lava...) it could deserve its own layer.
+It could be automated, but I went for artistic control. Sectors could be sorted by ascending height, then split into groups of similar size. That group size could be in function of sector counts or areas. Another criterion could be the sector properties - if a sector is flagged as causing damage (acid, lava...) it could deserve its own layer.
 
-Mayne I'll investigate later ; my gut feeling is that this problem is related to [Map coloring](https://en.wikipedia.org/wiki/Map_coloring).
+Maybe I'll investigate later; my gut feeling is that this problem is related to [Map coloring](https://en.wikipedia.org/wiki/Map_coloring).
 
 # Writing SVG
 
@@ -112,7 +112,7 @@ I've used the [svg crate](https://crates.io/crates/svg) in previous experiments.
 For laser cutting, I need :
 - one color for each layer
 - another for _internal lines_ that I intend to engrave
-- another for _positioning lines_. Some layers contain loose parts I'll need to correctly position before glueing them ; the positioning lines draw those pieces'position on the layer underneath.
+- another for _positioning lines_. Some layers contain loose parts I'll need to correctly position before gluing them; the positioning lines draw those pieces' position on the layer underneath.
 
 This is the result for E1M1, with the internal lines in red and the positioning lines in cyan:
 <Image src={e1m1} alt="E1M1 SVG"/>
@@ -120,7 +120,7 @@ This is the result for E1M1, with the internal lines in red and the positioning 
 
 ## Interlude: Halton sequence
 
-I spent a lot of time generating svgs with various colors to validate my work. I reused a trick I'm fond of to generate semi-random colors: using a Halton sequence output as the hue of a `HSL` color.
+I spent a lot of time generating SVGs with various colors to validate my work. I reused a trick I'm fond of to generate semi-random colors: using a Halton sequence output as the hue of an `HSL` color.
 
 ```rust
 // base, f are parameters here
@@ -155,7 +155,7 @@ Things were too simple at this point, so, of course, I found something. It all s
 
 I bootstrapped a simple Bevy app. To render the layers, I need to triangulate them. It happens there's a [triangulate crate](https://crates.io/crates/triangulate), but it comes with constraints.
 
-First, let's look at the DOOM polygons three cases:
+First, let's look at the DOOM polygons in three cases:
 
 1. a _simple_ polygon, which has a specific definition ([Wikipedia](https://en.wikipedia.org/wiki/Simple_polygon)) :
     - exactly two edges meet at each vertex
@@ -182,7 +182,7 @@ The solution to that problem is to rebuild paths by repeatedly finding the short
 
 If a doom sector contains multiple loops, it means it falls either in case 2 or 3. To figure it out, we can rely on empiric assumptions :
 - Cases 2 and 3 are exclusive - meaning if a vertex is shared, it must not be a hole. only I'm not _sure_ this is true
-- it also means that if a loop contains another, it is the outer loop of a polygon with holes
+- It also means that if a loop contains another, it is the outer loop of a polygon with holes
 
 I went with the latter, using the [geo rust crate](https://crates.io/crates/geo) which has extensive support for polygon operations.
 
@@ -194,11 +194,11 @@ The issue is that I now need to invert those polygons, as I want to subtract the
 
 ## Subsector attempt
 
-But wait, the WAD does contain simple, convex polygons, right ? The result of the binary space partitioning. It does, but those polygons sometimes have _implicit_ edges defined by the partition lines. I started working on that, then realized that was too much sidetracking. It should work however. Maybe later...
+But wait, the WAD does contain simple, convex polygons, right? The result of the binary space partitioning. It does, but those polygons sometimes have _implicit_ edges defined by the partition lines. I started working on that, then realized that was too much sidetracking. It should work, however. Maybe later...
 
 ## Backtracking
 
-I gave up on that approach at this point. The solution to the preview, a very valid problem, was simpler: use [TinkerCad](https://www.tinkercad.com/) to import the svg layers, extrude them, stack them export a .glb I could render in blender. That's how I rendered the banner of this article. Note that tinkercad's SVG import do expect proper SVG paths and not disjoint lines ; so part of that work did serve to produce a cute render.
+I gave up on that approach at this point. The solution to the preview, a very valid problem, was simpler: use [TinkerCad](https://www.tinkercad.com/) to import the SVG layers, extrude them, stack them export a .glb I could render in Blender. That's how I rendered the banner of this article. Note that Tinkercad's SVG import does expect proper SVG paths and not disjoint lines; so part of that work did serve to produce a cute render.
 
 ![Blender render of E1M1](./doom-render.png)
 ![Blender render of E1M2](./doom-render3.webp)
@@ -206,6 +206,6 @@ I gave up on that approach at this point. The solution to the preview, a very va
 
 # Final Result
 
-Just have to glue it now ! I definitely need to try it with clear acry lic or with multiple colors.
+Just have to glue it now! I definitely need to try it with clear acrylic or with multiple colors.
 
 ![result](./laser.jpg)
