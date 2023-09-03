@@ -201,3 +201,8 @@ a[data-link] {
 //   width: 20px;
 //   content: "asdasd";
 // }
+
+[astro-icon] {
+  width: 1rem;
+  margin-right: var(--spacing-1);
+}
