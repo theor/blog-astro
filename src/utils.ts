@@ -29,7 +29,7 @@ export const findImage = async (imagePath?: string) => {
   const key = `./content/blog/${imagePath}`; //.replace('~/', '/src/');
   console.log("find ", imagePath, key, images[key], await images[key]())
   return images[key] && typeof images[key] === "function"
-    ? (await images[key]())["default"].src
+    ? (await images[key]())["default"]
     : null;
 };
 
