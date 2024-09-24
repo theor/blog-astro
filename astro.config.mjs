@@ -7,7 +7,7 @@ import rehypeSlug from 'rehype-slug';
 
 import sitemap from "@astrojs/sitemap";
 import {myAstro} from './src/integration';
-
+import ink from './ink.lang.json';
 /** @type {import('astro-m2dx').Options} */
 const m2dxOptions = {
   // relativeImages: true,
@@ -50,7 +50,9 @@ export default defineConfig({
       // Add custom languages
       // Note: Shiki has countless langs built-in, including .astro!
       // https://github.com/shikijs/shiki/blob/main/docs/languages.md
-      langs: [],
+      langs: [
+        ink,
+      ],
       // Enable word wrap to prevent horizontal scrolling
       wrap: true,
     },

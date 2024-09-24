@@ -2,24 +2,89 @@
 title: "A fake terminal for the Mothership TTRPG using Ink"
 author: "theor"
 type: "post"
+draft: true
 pubDate: 2024-09-23T16:52:45.178Z
 description: ""
 banner: "banner.mp4"
 tags: []
 ---
 import { Image } from 'astro:assets';
-import diagram from 'https://mermaid.ink/svg/pako:eNpVUstuwjAQ_BXLp1bCEgkhJblVoD5UFSIeqlrlYuIlsUjs1LFBFeLfmywEtcfxzHh21j7RTAugMWWMpcpKW0JMUrqeJiTh2R5sSlOFXI2QbcHyVBEyZN64U660MxmQRBuUEuKFbOR1zAwaKxW3Uqs_9Mhn4QiN8O1Atda5q7ZgLmwYsAivfcz2Sh9LEHkFyv7TRCGLIgzglpPFbtdAHz1spxqifwkNmAOIngi7w83yuccPGDJ96_Gkw8nqpccYsFytr9gb4sif8x5jw6fXG_aZ5-OdH1IJfbwe-xPmBdh2WkC2b1x1JYKgXR9mbEzeFUy0VLZv6IVtjwgj7hZ1t8CGcCXaFxFCqvz-qop85o_Ht03cHbiRfFsCKUHltkAZHdAKTMWlaN_41NlSaguoIKWdUcCOuxLXd26l3Fm9-lEZja1xMKBGu7yg8Y6XTYtcLbiFmeS54VUvqbn60rq6iUBIq8375VPh3zr_AhNvt2g';
 
 I ran a [Mothership TTRPG](https://www.tuesdayknightgames.com/pages/mothership-rpg) one shot recently and thought it could do with some fancy terminal running on an iPad at the center of the table. I wrote one using inkle's [Ink](https://www.inklestudios.com/ink/) narrative language and [Svelte](https://svelte.dev/).
 <Video src={import("./banner.mp4")} />
 
 # Context and requirements
 
-<Image alt="diagram" width={500} src={diagram.src}/>
+<Image alt="diagram" width={500} height={500} src={'https://mermaid.ink/svg/pako:eNpVUstuwjAQ_BXLp1bCEgkhJblVoD5UFSIeqlrlYuIlsUjs1LFBFeLfmywEtcfxzHh21j7RTAugMWWMpcpKW0JMUrqeJiTh2R5sSlOFXI2QbcHyVBEyZN64U660MxmQRBuUEuKFbOR1zAwaKxW3Uqs_9Mhn4QiN8O1Atda5q7ZgLmwYsAivfcz2Sh9LEHkFyv7TRCGLIgzglpPFbtdAHz1spxqifwkNmAOIngi7w83yuccPGDJ96_Gkw8nqpccYsFytr9gb4sif8x5jw6fXG_aZ5-OdH1IJfbwe-xPmBdh2WkC2b1x1JYKgXR9mbEzeFUy0VLZv6IVtjwgj7hZ1t8CGcCXaFxFCqvz-qop85o_Ht03cHbiRfFsCKUHltkAZHdAKTMWlaN_41NlSaguoIKWdUcCOuxLXd26l3Fm9-lEZja1xMKBGu7yg8Y6XTYtcLbiFmeS54VUvqbn60rq6iUBIq8375VPh3zr_AhNvt2g'}/>
 # Ink language and integration
 
 lines, choices, continue
 tags
 external functions
+
+```ink
+-> boot
+
+= boot
+#speed 5
+TRAC PC-9800 Series System Terminal
+Reythorne OS Version 6.20
+Copyright (C) 2981, 2987 Reythorne Corp. /
+  TRAC Corporation
+
+EEEE I3000000032940xf100110303B77500EEEE
+I400000004294_M8_BL1_10221D113B323EEEE5
+no sdio debug board detected 
+TE : 102609
+BT : 11:30:18 Mar 14 2314
+                              
+Boot From SPI      
+#clear                                                             
+ucl decompress...pass                                                           
+0x12345678                                                                      
+Boot from internal device 1st SPI                                               
+ 
+TE : 512897    
+-> start        
+
+= start
+System Started                  
+#speed 40
+.........................
+#delay 100
+#speed 40
+ENTER PASSWORD
+####
+-> main
+
+= main
+#clear
+Greta base  #title
++ Diagnostic
+  -> diagnostics ->
++ Controls
+  -> controls ->
++ Comms
+  -> comms ->
++ Reboot
+  -> boot
+- -> main
+
+= diagnostics
+Generator [off]
+backup generator [off]
++ [back] ->->
+
+= controls
+Airlock [closed]
+ #delay
+->->
+
+= comms
+Comms [off]
+ #delay
+->->
+
+```
 
 # Visuals
