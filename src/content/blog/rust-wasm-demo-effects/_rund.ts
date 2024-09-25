@@ -322,6 +322,7 @@ async function plasma(x: HTMLElement, dataset: DOMStringMap, memory: WebAssembly
         { disablePane: dataset["disablepane"] === 'true', static: dataset["static"] === 'true' },
     ).create();
 }
+export function setup(){
 init().then(async wasm => {
     console.log("init", wasm);
     for (let x of document.querySelectorAll("div[data-sample]")) {
@@ -501,3 +502,4 @@ init().then(async wasm => {
     };
 });
 // customElements.define("astro-greet", AstroGreet);
+}

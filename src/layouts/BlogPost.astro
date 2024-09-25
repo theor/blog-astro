@@ -59,5 +59,16 @@ console.warn("STATIC ",staticBanner, banner, bannerImage)
       </article>
     </main>
     <Footer />
+    <script>
+      const graphs = document.getElementsByClassName("mermaid")
+      import mermaid from "mermaid";
+      mermaid.initialize({
+          startOnLoad: false,
+          fontFamily: "var(--sans-font)",
+          // @ts-ignore This works, but TS expects a enum for some reason
+          theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default",
+        })
+        mermaid.run();
+    </script>
   </body>
 </html>

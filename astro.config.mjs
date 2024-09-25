@@ -8,6 +8,8 @@ import rehypeSlug from 'rehype-slug';
 import sitemap from "@astrojs/sitemap";
 import {myAstro} from './src/integration';
 
+import ink from './ink.lang.json';
+import { mermaid } from './src/integration/remark/mermaid';
 /** @type {import('astro-m2dx').Options} */
 const m2dxOptions = {
   // relativeImages: true,
@@ -38,9 +40,12 @@ export default defineConfig({
     assetsInclude: ["**/*.m4v", "**/*.webm", "**/*.bin"],
   },
   site: "https://theor.xyz",
-  integrations: [myAstro(), mdx(), sitemap(), ],
+  integrations: [
+    myAstro(),
+     mdx(), sitemap(),
+    ],
   markdown: {
-    remarkPlugins: [[m2dx, m2dxOptions]],
+    remarkPlugins: [[mermaid, {}],[m2dx, m2dxOptions]],
     rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],
     extendDefaultPlugins: true,
     shikiConfig: {
@@ -50,7 +55,9 @@ export default defineConfig({
       // Add custom languages
       // Note: Shiki has countless langs built-in, including .astro!
       // https://github.com/shikijs/shiki/blob/main/docs/languages.md
-      langs: [],
+      langs: [
+        ink,
+      ],
       // Enable word wrap to prevent horizontal scrolling
       wrap: true,
     },
