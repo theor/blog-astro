@@ -3,7 +3,6 @@ import { visit, EXIT, CONTINUE } from 'unist-util-visit';
 import {dedent} from "ts-dedent"
 import type { Root } from 'mdast';
 import type { VFile } from 'vfile';
-import { escapeHTML } from "astro/runtime/server/escape.js";
 
 const escapeMap: Record<string, string> = {
   "&": "&amp;",
@@ -21,12 +20,12 @@ export function mermaid(): RemarkPlugin {
           if (node.lang !== "mermaid") return;
           console.log("MERMAID",node);
       
-        // //   // @ts-ignore
+          // @ts-ignore
           node.type = "html";
           node.value = dedent`
-            <div class="mermaid" data-content="${escapeHTML(node.value)}">
-              <p>Loading graph...</p>
-            </div>
+            <pre class="mermaid" data-content="${escapeHtml(node.value)}">
+              ${escapeHtml(node.value)}
+            </pre>
           `
         })
       }

@@ -62,25 +62,32 @@ console.warn("STATIC ",staticBanner, banner, bannerImage)
     <script>
       const graphs = document.getElementsByClassName("mermaid")
       import mermaid from "mermaid";
-      if (document.getElementsByClassName("mermaid").length > 0) {
-        mermaid.initialize({
+      mermaid.initialize({
           startOnLoad: false,
           fontFamily: "var(--sans-font)",
           // @ts-ignore This works, but TS expects a enum for some reason
           theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default",
         })
-  
-        for (const graph of graphs) {
-          const content = graph.getAttribute("data-content");
-          console.log(content);
-          if (!content) continue;
-          // let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-          const id = ("mermaid-" + Math.round(Math.random() * 100000));
-          // mermaid.render(id, content, svg);
-           const result = await mermaid.render(id, content);
-          graph.innerHTML = (result.svg);
-        }
-      }
+        mermaid.run();
+  //  if (graphs.length > 0) {
+       
+  //       let i = 1;
+  //       for (const  graph of graphs) {
+  //         const content = graph.getAttribute("data-content");
+  //         console.log(content);
+  //         if (!content) continue;
+  //         let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  //         const id = ("mermaid-" + i++);
+  //         svg.id = id;
+  //         graph.appendChild(svg);
+  //          const result = await mermaid.render(id, content);
+  //          svg.innerHTML = result.svg;
+  //         //  console.log(result);
+  //         // await mermaid.render(id, content, graph);
+  //         // if(result.bindFunctions)
+  //           // result.bindFunctions(graph);
+  //       }
+  //     }
     </script>
   </body>
 </html>
