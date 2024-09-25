@@ -7,9 +7,9 @@ import rehypeSlug from 'rehype-slug';
 
 import sitemap from "@astrojs/sitemap";
 import {myAstro} from './src/integration';
-import { mermaid } from './src/integration/remark/mermaid';
 
 import ink from './ink.lang.json';
+import { mermaid } from './src/integration/remark/mermaid';
 /** @type {import('astro-m2dx').Options} */
 const m2dxOptions = {
   // relativeImages: true,
@@ -40,9 +40,12 @@ export default defineConfig({
     assetsInclude: ["**/*.m4v", "**/*.webm", "**/*.bin"],
   },
   site: "https://theor.xyz",
-  integrations: [myAstro(), mdx(), sitemap(), ],
+  integrations: [
+    myAstro(),
+     mdx(), sitemap(),
+    ],
   markdown: {
-    remarkPlugins: [[mermaid, {}], [m2dx, m2dxOptions]],
+    remarkPlugins: [[mermaid, {}],[m2dx, m2dxOptions]],
     rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],
     extendDefaultPlugins: true,
     shikiConfig: {

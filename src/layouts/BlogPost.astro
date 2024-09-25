@@ -69,25 +69,6 @@ console.warn("STATIC ",staticBanner, banner, bannerImage)
           theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default",
         })
         mermaid.run();
-  //  if (graphs.length > 0) {
-       
-  //       let i = 1;
-  //       for (const  graph of graphs) {
-  //         const content = graph.getAttribute("data-content");
-  //         console.log(content);
-  //         if (!content) continue;
-  //         let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  //         const id = ("mermaid-" + i++);
-  //         svg.id = id;
-  //         graph.appendChild(svg);
-  //          const result = await mermaid.render(id, content);
-  //          svg.innerHTML = result.svg;
-  //         //  console.log(result);
-  //         // await mermaid.render(id, content, graph);
-  //         // if(result.bindFunctions)
-  //           // result.bindFunctions(graph);
-  //       }
-  //     }
     </script>
   </body>
 </html>

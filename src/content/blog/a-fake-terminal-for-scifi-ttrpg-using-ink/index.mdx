@@ -16,9 +16,27 @@ I ran a [Mothership TTRPG](https://www.tuesdayknightgames.com/pages/mothership-r
 # Context and requirements
 
 ```mermaid
-graph TD;
-    A-->B;
-    A-->C; 
+
+
+%%{init: {'flowchart' : {'curve' : 'linear'}}}%%
+flowchart LR
+    poll[Poll next line]
+    tags[Process current tags]
+    cancontinue[Can continue ?]
+    choices
+
+    poll --> tags
+    tags --> cancontinue
+    cancontinue ---|Yes| poll
+    cancontinue -->|No| choices
+    %% A[Christmas]
+    %% B(Go shopping)
+    %% C{Let me think}
+    %% A -->|Get money| B
+    %% B --> C
+    %% C -->|One| D[Laptop]
+    %% C -->|Two| E[iPhone]
+    %% C -->|Three| F[fa:fa-car Car]
 ```
 
 # Ink language and integration

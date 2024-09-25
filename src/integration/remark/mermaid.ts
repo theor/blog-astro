@@ -15,11 +15,12 @@ const escapeMap: Record<string, string> = {
 const escapeHtml = (str: string) => str.replace(/[&<>"']/g, c => escapeMap[c])
 
 export function mermaid(): RemarkPlugin {
-    return function (tree: Root, file: VFile): void {
+    return async function (tree: Root, file: VFile) {
+      let promises: PromiseLike<any>[] = []
         visit(tree, "code", node => {
           if (node.lang !== "mermaid") return;
           console.log("MERMAID",node);
-      
+
           // @ts-ignore
           node.type = "html";
           node.value = dedent`
@@ -27,6 +28,7 @@ export function mermaid(): RemarkPlugin {
               ${escapeHtml(node.value)}
             </pre>
           `
-        })
+        });
+        await Promise.all(promises);
       }
 }
