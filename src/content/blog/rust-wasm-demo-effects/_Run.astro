@@ -5,16 +5,17 @@ const { height = "300px", title = "" } = Astro.props;
     import planet  from "./Ice.png?url";
 
 ---
-<!-- <img src={rocket}/> -->
-<!-- {rocket} -->
-<script>
-    import * as rund from "./_rund";
-</script>
 <style define:vars={{ wasmheight: height }}>
     div {
         min-height: var(--wasmheight);
     }
 </style>
-<div {...Astro.props} data-bg={bg} data-tree={tree} data-planet={planet}>
+<div {...Astro.props} data-bg={bg} data-tree={tree} data-planet={planet} data-rust-demo>
 </div>
 {title && <span>{title}</span>}
+<script>
+    import {setup} from "./_rund";
+    if(document.querySelectorAll("[data-rust-demo]").length > 0) {
+        setup();
+    }	
+</script>
