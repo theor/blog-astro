@@ -77,8 +77,8 @@ console.warn("STATIC ",staticBanner, banner, bannerImage)
           // let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
           const id = ("mermaid-" + Math.round(Math.random() * 100000));
           // mermaid.render(id, content, svg);
-           const {svg} = await mermaid.render(id, content);
-          graph.innerHTML = (svg);
+           const result = await mermaid.render(id, content);
+          graph.innerHTML = (result.svg);
         }
       }
     </script>
