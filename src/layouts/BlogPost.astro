@@ -59,5 +59,28 @@ console.warn("STATIC ",staticBanner, banner, bannerImage)
       </article>
     </main>
     <Footer />
+    <script>
+      const graphs = document.getElementsByClassName("mermaid")
+      import mermaid from "mermaid";
+      if (document.getElementsByClassName("mermaid").length > 0) {
+        mermaid.initialize({
+          startOnLoad: false,
+          fontFamily: "var(--sans-font)",
+          // @ts-ignore This works, but TS expects a enum for some reason
+          theme: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default",
+        })
+  
+        for (const graph of graphs) {
+          const content = graph.getAttribute("data-content");
+          console.log(content);
+          if (!content) continue;
+          // let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          const id = ("mermaid-" + Math.round(Math.random() * 100000));
+          // mermaid.render(id, content, svg);
+           const {svg} = await mermaid.render(id, content);
+          graph.innerHTML = (svg);
+        }
+      }
+    </script>
   </body>
 </html>

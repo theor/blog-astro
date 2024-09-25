@@ -7,6 +7,8 @@ import rehypeSlug from 'rehype-slug';
 
 import sitemap from "@astrojs/sitemap";
 import {myAstro} from './src/integration';
+import { mermaid } from './src/integration/remark/mermaid';
+
 import ink from './ink.lang.json';
 /** @type {import('astro-m2dx').Options} */
 const m2dxOptions = {
@@ -40,7 +42,7 @@ export default defineConfig({
   site: "https://theor.xyz",
   integrations: [myAstro(), mdx(), sitemap(), ],
   markdown: {
-    remarkPlugins: [[m2dx, m2dxOptions]],
+    remarkPlugins: [[mermaid, {}], [m2dx, m2dxOptions]],
     rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],
     extendDefaultPlugins: true,
     shikiConfig: {

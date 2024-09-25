@@ -24,6 +24,7 @@
     "astro-m2dx": "^0.7.16",
     "fontsource-merriweather": "^4.0.0",
     "fontsource-montserrat": "^4.0.0",
+    "mermaid": "^11.2.1",
     "rehype-autolink-headings": "^6.1.1",
     "rehype-slug": "^5.1.0",
     "tweakpane": "^3.1.10",

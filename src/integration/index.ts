@@ -34,6 +34,7 @@ export function myAstro(): AstroIntegration  {
                 const remarkPlugins = [
                     // remarkEmoji,
                     // remarkA11yEmoji,
+                    // mermaid,
                     () => autoAbstract(isDev),
                     // [autoHero, { baseDir }],
                     // remarkUnwrapImages,
