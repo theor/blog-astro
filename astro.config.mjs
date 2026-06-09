@@ -1,6 +1,7 @@
 import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import m2dx from "astro-m2dx";
+import icon from "astro-icon";
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 import toc from "@jsdevtools/rehype-toc";
 import rehypeSlug from 'rehype-slug';
@@ -38,11 +39,10 @@ export default defineConfig({
     assetsInclude: ["**/*.m4v", "**/*.webm", "**/*.bin"],
   },
   site: "https://theor.xyz",
-  integrations: [myAstro(), mdx(), sitemap(), ],
+  integrations: [myAstro(), mdx(), sitemap(), icon()],
   markdown: {
     remarkPlugins: [[m2dx, m2dxOptions]],
     rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],
-    extendDefaultPlugins: true,
     shikiConfig: {
       // Choose from Shiki's built-in themes (or add your own)
       // https://github.com/shikijs/shiki/blob/main/docs/themes.md

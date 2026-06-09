@@ -3,7 +3,7 @@ import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
-import { getCollection } from "astro:content";
+import { getCollection, render } from "astro:content";
 import { findImage, isVideo } from "../utils";
 import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 // const posts =  (await getCollection('blog', x => !x.data.draft)).sort(
@@ -15,9 +15,9 @@ let posts = await Promise.all(
     )
         .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
         .map(async (x) => {
-            const rendered = await x.render();
+            const rendered = await render(x);
             const b = x.data.banner
-                ? await findImage(`${x.slug}/${x.data.banner}`).catch()
+                ? await findImage(`${x.id}/${x.data.banner}`).catch()
                 : null;
             return { banner: b, remarkPluginFrontmatter:rendered.remarkPluginFrontmatter, ...x };
         })
@@ -81,7 +81,7 @@ let posts = await Promise.all(
                         return (
                             <div class="post-preview">
                                 <h1>
-                                    <a href={`/${post.slug}/`}>
+                                    <a href={`/${post.id}/`}>
                                         {post.data.title}
                                     </a>
                                 </h1>
@@ -97,7 +97,7 @@ let posts = await Promise.all(
                                             />
                                         ))}
                                 <BlogPostMetadata post={post}/>
-<a class="abstract" href={`/${post.slug}/`}>
+<a class="abstract" href={`/${post.id}/`}>
     {post.remarkPluginFrontmatter.abstract}
     ..
 </a>

@@ -8,7 +8,7 @@ import { findImage} from "../utils";
 import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 type Props = CollectionEntry<"blog"> & {remarkPluginFrontmatter: Record<string, any>};
 const { title, description, pubDate, updatedDate, heroImage, banner, staticBanner } = Astro.props.data;
-const {slug,remarkPluginFrontmatter } = Astro.props;
+const {id, remarkPluginFrontmatter } = Astro.props;
 const bannerImage = staticBanner ? staticBanner : banner;
 console.warn("STATIC ",staticBanner, banner, bannerImage)
 ---
@@ -16,7 +16,7 @@ console.warn("STATIC ",staticBanner, banner, bannerImage)
 <html lang="en">
   <head>
     <BaseHead title={title} description={remarkPluginFrontmatter?.abstract || description}
-     image={bannerImage && await findImage(slug + "/" + bannerImage)} 
+     image={bannerImage && await findImage(id + "/" + bannerImage)}
      />
     <style>
       .title {

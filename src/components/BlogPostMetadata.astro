@@ -1,5 +1,5 @@
 ---
-import { Icon } from "astro-icon";
+import { Icon } from "astro-icon/components";
 import type { CollectionEntry } from "astro:content";
 import FormattedDate from "../components/FormattedDate.astro";
 type Props = CollectionEntry<"blog">;
@@ -9,7 +9,7 @@ const { post } = Astro.props;
 
 <style lang="scss">
     .metadata {
-            [astro-icon] {
+            [data-icon] {
                 width: 1rem;
                 margin-right: var(--spacing-1);
             }
