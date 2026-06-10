@@ -4,12 +4,14 @@ author: "theor"
 type: "post"
 pubDate: 2026-06-08T15:43:14.015Z
 description: ""
-# banner: "_banner.webm"
-# staticBanner: "_banner.webp"
+banner: "banner.mp4"
+staticBanner: "banner.webp"
 tags: ["pen plotter"]
 ---
 
 I built a pen plotter and spent a lot of time fine-tuning it - from tweaking an existing design to designing a tangential knife.
+
+<Video src={import("./banner.mp4")} />
 
 # Starting with a cheap kit
 
@@ -23,10 +25,25 @@ Both axis use linear bearings. I don't know how much difference there is between
 
 The gantry is a couple of laser cut acrylic plates, with tie wraps to secure the bearings. The play in there leads to the pen height varying a lot then it moves on the Y axis. 
 
-The controller is an arduino cnc shield. 
+The controller is an arduino cnc shield. GRBL on an old 8-bit MCU is slow but it works. The stepper drivers are a4988, which are noisy.
+
+The kit does not come with end stops: you have to zero the machine by hand.
 
 The pen lift uses a servo. They're noisy and fragile, but cheap and don't require another stepper driver. They're usually mapped to the GCode M3 command, which can be a pain in some software. 
 The movement is accomplished with small linear bearings and a rubber band. In my experience smaller *cheap* linear bearings have proportionally even more play.
 
-
 The pen is secured with a screw pushing it against a bracket. It's...ok, but I realized later that it makes any pen change complicated if the two pens don't have the same diameter.
+
+All in all, it's a reasonable starting kit... but I wanted a quieter, faster, more accurate machine.
+
+# Using a different design
+
+I stumbled upon Lehaiver's CoreXY frame on thingiverse [here](https://www.thingiverse.com/thing:2138286). It's an elegant design:
+
+![Lehaiver's design](./lehaiver.jpg)
+
+CoreXY kinematics with linear guides on 20mm aluminum extrusions. I ended up redesigning most of the parts in OnShape from scratch, but it's a great starting point. The linear guides are a huge improvement over the linear bearings, and the aluminum extrusions bring a lot of rigidity.
+
+Lehaiver made a [Laser mount](https://www.thingiverse.com/thing:2685298) with a dove tail plate that I tweaked to fit a pen lift. I also added a couple of captive nuts to fasten a bowden tube for cable management and a limit switch.
+
+![Mount drawing](./mount-drawing.svg)
