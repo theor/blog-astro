@@ -1,13 +1,12 @@
 /**
- * Shiki transformer implementing `!mark` line highlighting for scrollycoding panels.
+ * Shiki transformer that renders the annotations parsed by annotations.ts.
  *
- * The remark plugin strips `// !mark(...)` comments out of the code and encodes the
- * resulting line numbers into the fence meta as `ch-mark=1,3:5`. Astro forwards that
- * meta to shiki as `meta.__raw` (see @astrojs/internal-helpers/dist/shiki.js), which is
- * what we read back here.
+ * The remark plugin strips the `// !mark(...)` comments and encodes the resulting ranges
+ * into the fence meta; Astro forwards that meta to shiki as `meta.__raw` (see
+ * @astrojs/internal-helpers/dist/shiki.js), which is what we read back here.
  */
 
-export const MARK_META_KEY = "ch-mark";
+import { decodeAnnotations } from "./annotations";
 
 /** Minimal structural types - shiki is only a transitive dependency here. */
 type HastProperties = Record<string, unknown>;
@@ -17,36 +16,21 @@ interface HastElement {
 interface TransformerContext {
   options?: { meta?: { __raw?: string } };
 }
+interface ThemedToken {
+  content: string;
+}
 export interface CodeTransformer {
   name: string;
   pre?: (this: TransformerContext, node: HastElement) => void;
   line?: (this: TransformerContext, node: HastElement, line: number) => void;
-}
-
-const cache = new Map<string, Set<number> | null>();
-
-/** `ch-mark=1,3:5` -> {1,3,4,5}. Returns null when the block carries no marks. */
-export function parseMarkRanges(raw?: string): Set<number> | null {
-  if (!raw) return null;
-  if (cache.has(raw)) return cache.get(raw)!;
-
-  const match = raw.match(new RegExp(`\\b${MARK_META_KEY}=([\\d,:]+)`));
-  let lines: Set<number> | null = null;
-
-  if (match) {
-    lines = new Set<number>();
-    for (const part of match[1].split(",")) {
-      if (!part) continue;
-      const [start, end] = part.split(":").map(Number);
-      if (!Number.isFinite(start)) continue;
-      const last = Number.isFinite(end) ? end : start;
-      for (let i = start; i <= last; i++) lines.add(i);
-    }
-    if (lines.size === 0) lines = null;
-  }
-
-  cache.set(raw, lines);
-  return lines;
+  span?: (
+    this: TransformerContext,
+    node: HastElement,
+    line: number,
+    col: number,
+    lineElement: HastElement,
+    token: ThemedToken,
+  ) => void;
 }
 
 const addClass = (node: HastElement, className: string) => {
@@ -59,15 +43,14 @@ export function markTransformer(): CodeTransformer {
   return {
     name: "scrollycoding:mark",
 
-    // Runs after `line`, so it can only be used for block-level flags.
+    // Runs after `line`/`span`, so it can only be used for block-level flags.
     pre(node) {
-      const marks = parseMarkRanges(this.options?.meta?.__raw);
-      if (!marks) return;
+      if (!decodeAnnotations(this.options?.meta?.__raw)) return;
 
       node.properties["data-ch-marked"] = "true";
 
       // `shikiConfig.wrap: true` is global and wrapped code reads badly in the narrow
-      // sticky panel, so opt marked blocks back out of wrapping.
+      // sticky panel, so opt annotated blocks back out of wrapping.
       const style = String(node.properties.style ?? "");
       node.properties.style = style
         .replace(/white-space:\s*pre-wrap;?/g, "")
@@ -76,8 +59,31 @@ export function markTransformer(): CodeTransformer {
     },
 
     line(node, line) {
-      const marks = parseMarkRanges(this.options?.meta?.__raw);
-      if (marks?.has(line)) addClass(node, "ch-mark");
+      if (decodeAnnotations(this.options?.meta?.__raw)?.lines.has(line)) {
+        addClass(node, "ch-mark");
+      }
+    },
+
+    /**
+     * Inline ranges, from regex queries like `// !mark[/home_axis/]`.
+     *
+     * lighter reports 1-based inclusive columns; shiki gives a 0-based `col` for the
+     * token start. Marking is whole-token: a token that merely overlaps the range gets
+     * marked rather than being split, which keeps this inside the stock shiki pipeline.
+     */
+    span(node, line, col, _lineElement, token) {
+      const annotations = decodeAnnotations(this.options?.meta?.__raw);
+      if (!annotations?.inline.length) return;
+
+      const from = col + 1;
+      const to = col + token.content.length;
+
+      for (const range of annotations.inline) {
+        if (range.line === line && from <= range.to && to >= range.from) {
+          addClass(node, "ch-mark-inline");
+          return;
+        }
+      }
     },
   };
 }

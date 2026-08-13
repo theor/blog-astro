@@ -2,6 +2,8 @@ import { visit, SKIP } from "unist-util-visit";
 import { toString } from "mdast-util-to-string";
 import type { Root, RootContent, Code, Heading } from "mdast";
 
+import { extractCodeAnnotations, encodeAnnotations, SUPPORTED } from "./annotations";
+
 export interface ComponentPaths {
   root: string;
   step: string;
@@ -76,54 +78,6 @@ const importNode = (name: string, spec: string) => ({
 });
 
 /* -------------------------------------------------------------------------- */
-/* `!mark` annotations                                                         */
-/* -------------------------------------------------------------------------- */
-
-/**
- * A line consisting only of a comment carrying a `!mark` annotation.
- *
- * Semantics, counting the line *after* the annotation as 1:
- *   `// !mark`      -> that one line
- *   `// !mark(n)`   -> n lines
- *   `// !mark(a:b)` -> lines a through b
- */
-const MARK_LINE = /^\s*(?:\/\/|#|--|;|%|<!--|\/\*)\s*!mark(?:\(([^)]*)\))?\s*(?:\*\/|-->)?\s*$/;
-
-export function extractMarks(source: string): { code: string; marks: string | null } {
-  if (!source.includes("!mark")) return { code: source, marks: null };
-
-  const out: string[] = [];
-  const ranges: Array<[number, number]> = [];
-
-  for (const line of source.split("\n")) {
-    const match = line.match(MARK_LINE);
-    if (!match) {
-      out.push(line);
-      continue;
-    }
-
-    // 1-based line number of the next line that will be emitted.
-    const base = out.length + 1;
-    const arg = match[1]?.trim();
-
-    if (!arg) {
-      ranges.push([base, base]);
-    } else if (arg.includes(":")) {
-      const [a, b] = arg.split(":").map((n) => Number(n.trim()));
-      if (Number.isFinite(a) && Number.isFinite(b)) ranges.push([base + a - 1, base + b - 1]);
-    } else {
-      const count = Number(arg);
-      if (Number.isFinite(count) && count > 0) ranges.push([base, base + count - 1]);
-    }
-  }
-
-  if (ranges.length === 0) return { code: out.join("\n"), marks: null };
-
-  const encoded = ranges.map(([a, b]) => (a === b ? `${a}` : `${a}:${b}`)).join(",");
-  return { code: out.join("\n"), marks: encoded };
-}
-
-/* -------------------------------------------------------------------------- */
 /* Parsing                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -134,7 +88,9 @@ const isPanelCode = (node: RootContent): node is Code =>
   node.type === "code" && typeof node.meta === "string" && node.meta.trim().startsWith("!");
 
 const isBlank = (node: RootContent) =>
-  node.type === "text" && typeof (node as { value?: string }).value === "string" && !(node as { value: string }).value.trim();
+  node.type === "text" &&
+  typeof (node as { value?: string }).value === "string" &&
+  !(node as { value: string }).value.trim();
 
 /** `!!steps Setting up the gantry` -> `Setting up the gantry`. */
 const parseTitle = (heading: Heading): string => {
@@ -150,88 +106,118 @@ interface Step {
   codeTitle: string | null;
 }
 
+/** Splits a <Scrollycoding> element's children into steps. Throws via file.fail. */
+function parseSteps(node: any, file: any): Step[] {
+  const children: RootContent[] = node.children ?? [];
+  const steps: Step[] = [];
+
+  for (const child of children) {
+    if (isStepHeading(child)) {
+      steps.push({ title: parseTitle(child), prose: [], code: null, codeTitle: null });
+      continue;
+    }
+
+    if (steps.length === 0) {
+      if (isBlank(child)) continue;
+      file.fail(
+        `<${WRAPPER}> content must start with a "## !!steps" heading.`,
+        child.position ?? node.position,
+      );
+    }
+
+    const step = steps[steps.length - 1];
+
+    if (isPanelCode(child)) {
+      if (step.code) {
+        const where = `${file.path ?? "unknown"}:${child.position?.start.line ?? "?"}`;
+        const warning = `<${WRAPPER}> step "${step.title}" has more than one "!" code block; only the first is used. (${where})`;
+        file.message(warning, child.position ?? node.position);
+        console.warn(`[scrollycoding] ${warning}`);
+        continue;
+      }
+      step.codeTitle = child.meta!.trim().replace(/^!+/, "").trim() || null;
+      step.code = child;
+      continue;
+    }
+
+    step.prose.push(child);
+  }
+
+  if (steps.length === 0) {
+    file.fail(`<${WRAPPER}> requires at least one "## !!steps" heading.`, node.position);
+  }
+
+  return steps;
+}
+
+function buildBlock(node: any, steps: Step[]): void {
+  const count = String(steps.length);
+
+  node.name = NAMES.root;
+  node.attributes = [];
+  node.children = steps.flatMap((step, i) => [
+    element(NAMES.step, [attr("index", String(i)), attr("title", step.title)], step.prose),
+    element(
+      NAMES.panel,
+      [
+        attr("index", String(i)),
+        attr("count", count),
+        ...(step.codeTitle ? [attr("title", step.codeTitle)] : []),
+      ],
+      step.code ? [step.code] : [],
+    ),
+  ]);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Plugin                                                                      */
 /* -------------------------------------------------------------------------- */
 
 export function remarkScrollycoding(components: ComponentPaths) {
-  return function transform(tree: Root, file: any): void {
-    let found = false;
+  // Async because annotation parsing goes through @code-hike/lighter, which needs to
+  // load a TextMate grammar to know where the language's comments are.
+  return async function transform(tree: Root, file: any): Promise<void> {
+    const blocks: Array<{ node: any; steps: Step[] }> = [];
 
     visit(tree, "mdxJsxFlowElement", (node: any) => {
       if (node.name !== WRAPPER) return;
-      found = true;
-
-      const children: RootContent[] = node.children ?? [];
-      const steps: Step[] = [];
-
-      for (const child of children) {
-        if (isStepHeading(child)) {
-          steps.push({ title: parseTitle(child), prose: [], code: null, codeTitle: null });
-          continue;
-        }
-
-        if (steps.length === 0) {
-          if (isBlank(child)) continue;
-          file.fail(
-            `<${WRAPPER}> content must start with a "## !!steps" heading.`,
-            child.position ?? node.position,
-          );
-        }
-
-        const step = steps[steps.length - 1];
-
-        if (isPanelCode(child)) {
-          if (step.code) {
-            // file.message() alone is not surfaced by Astro's MDX plugin, and silently
-            // dropping content is a trap - warn on the console too.
-            const where = `${file.path ?? "unknown"}:${child.position?.start.line ?? "?"}`;
-            const warning = `<${WRAPPER}> step "${step.title}" has more than one "!" code block; only the first is used. (${where})`;
-            file.message(warning, child.position ?? node.position);
-            console.warn(`[scrollycoding] ${warning}`);
-            continue;
-          }
-          step.codeTitle = child.meta!.trim().replace(/^!+/, "").trim() || null;
-
-          const { code, marks } = extractMarks(child.value);
-          child.value = code;
-          // The filename lives on the component, not in the meta - anything left here is
-          // forwarded to shiki as `meta.__raw`.
-          child.meta = marks ? `ch-mark=${marks}` : null;
-
-          step.code = child;
-          continue;
-        }
-
-        step.prose.push(child);
-      }
-
-      if (steps.length === 0) {
-        file.fail(`<${WRAPPER}> requires at least one "## !!steps" heading.`, node.position);
-      }
-
-      const count = String(steps.length);
-
-      node.name = NAMES.root;
-      node.attributes = [];
-      node.children = steps.flatMap((step, i) => [
-        element(NAMES.step, [attr("index", String(i)), attr("title", step.title)], step.prose),
-        element(
-          NAMES.panel,
-          [
-            attr("index", String(i)),
-            attr("count", count),
-            ...(step.codeTitle ? [attr("title", step.codeTitle)] : []),
-          ],
-          step.code ? [step.code] : [],
-        ),
-      ]);
-
-      // Don't descend into the nodes we just built.
+      blocks.push({ node, steps: parseSteps(node, file) });
+      // Don't descend into the nodes we're about to replace.
       return SKIP;
     });
 
-    if (!found) return;
+    if (blocks.length === 0) return;
+
+    for (const { steps } of blocks) {
+      for (const step of steps) {
+        if (!step.code) continue;
+
+        const at = `${file.path ?? "unknown"}:${step.code.position?.start.line ?? "?"}`;
+        const warn = (msg: string) => {
+          file.message(msg, step.code!.position);
+          console.warn(`[scrollycoding] ${msg} (${at})`);
+        };
+
+        const { code, annotations } = await extractCodeAnnotations(
+          step.code.value,
+          step.code.lang,
+          warn,
+        );
+
+        for (const name of new Set(annotations.map((a) => a.name))) {
+          if (!SUPPORTED.has(name)) {
+            warn(`unsupported annotation "!${name}" - parsed but not rendered`);
+          }
+        }
+
+        step.code.value = code;
+        // The filename label lives on the component; whatever is left in the meta is
+        // forwarded to shiki as `meta.__raw` for markTransformer.ts to read.
+        step.code.meta = encodeAnnotations(annotations);
+      }
+    }
+
+    for (const { node, steps } of blocks) buildBlock(node, steps);
 
     tree.children.push(
       importNode(NAMES.root, components.root) as any,

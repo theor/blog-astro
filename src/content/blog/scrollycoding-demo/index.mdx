@@ -65,7 +65,6 @@ With the machine homed, the path is streamed one segment at a time. The controll
 planner buffer does the smoothing, so this loop can stay dumb.
 
 ```rust ! main.rs
-// !mark(9:12)
 fn main() {
     let port = open_serial("COM3");
     wait_for_banner(&port);
@@ -74,10 +73,12 @@ fn main() {
     home_axis(&port, Axis::Y);
     home_axis(&port, Axis::Z);
 
+    // !mark(start)
     for segment in path.segments() {
         send(&port, segment.to_gcode());
         wait_for_ok(&port);
     }
+    // !mark(end)
 }
 ```
 
@@ -105,12 +106,12 @@ The second, slower approach is what actually sets the origin; the first one just
 close fast.
 
 ```rust ! homing.rs
-// !mark(4:7)
 fn home(axis: &mut Axis) {
     seek(axis, FAST);
 
     back_off(axis, 2.0);
     seek(axis, SLOW);
+    // !mark[/set_origin/]
     axis.set_origin();
 }
 ```

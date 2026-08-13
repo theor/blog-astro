@@ -175,6 +175,13 @@
     fast-wrap-ansi "^0.2.0"
     sisteransi "^1.0.5"
 
+"@code-hike/lighter@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@code-hike/lighter/-/lighter-1.0.1.tgz#da0a8dc0230ce93897fe891bab73745eabd3a7dd"
+  integrity sha512-mccvcsk5UTScRrE02oBz1/qzckyhD8YE3VQlQv++2bSVVZgNuCUX8MpokSCi5OmfRAAxbj6kmNiqq1Um8eXPrw==
+  dependencies:
+    ansi-sequence-parser "1.1.1"
+
 "@emnapi/runtime@^1.7.0":
   version "1.11.0"
   resolved "https://registry.yarnpkg.com/@emnapi/runtime/-/runtime-1.11.0.tgz#ce16b3674ff7266bbf50f9668bde8a04f3014d4e"
@@ -1065,6 +1072,11 @@ ansi-regex@^6.0.1:
   version "6.0.1"
   resolved "https://registry.yarnpkg.com/ansi-regex/-/ansi-regex-6.0.1.tgz#3183e38fae9a65d7cb5e53945cd5897d0260a06a"
   integrity sha512-n5M855fKb2SsfMIiFFoVrABHJC8QtHwVx+mHWP3QcEqBHYienj5dHSgjbxtC0WEZXYt4wcD6zrQElDPhFuZgfA==
+
+ansi-sequence-parser@1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/ansi-sequence-parser/-/ansi-sequence-parser-1.1.1.tgz#e0aa1cdcbc8f8bb0b5bca625aac41f5f056973cf"
+  integrity sha512-vJXt3yiaUL4UU546s3rPXlsry/RnM730G1+HkpKE012AN0sx1eOrxSu95oKDIonskeLTijMgqWZ3uDEe3NFvyg==
 
 ansi-styles@^4.0.0, ansi-styles@^4.1.0:
   version "4.3.0"

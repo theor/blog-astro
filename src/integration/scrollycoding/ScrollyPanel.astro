@@ -85,6 +85,14 @@ const n = Number(count);
     box-shadow: inset 3px 0 0 #88c0d0;
   }
 
+  /* Inline ranges, from regex queries like `!mark[/home_axis/]`. Marked at whole-token
+     granularity, so this highlights the tokens the range touches. */
+  .scrolly-panel :global(.ch-mark-inline) {
+    background: rgba(136, 192, 208, 0.28);
+    border-radius: 3px;
+    box-shadow: 0 0 0 1px rgba(136, 192, 208, 0.5);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .scrolly-panel {
       transition: none;
