@@ -3,11 +3,12 @@ title: "Building a Pen Plotter"
 author: "theor"
 type: "post"
 pubDate: 2026-06-08T15:43:14.015Z
-description: ""
+description: "Building and tuning a DIY CoreXY pen plotter: hardware upgrades from a cheap kit, custom 3D-printed parts, and designing a tangential knife attachment"
 banner: "banner.mp4"
 staticBanner: "banner.webp"
 tags: ["pen plotter"]
 ---
+import { Image } from 'astro:assets';
 
 I built a pen plotter and spent a lot of time fine-tuning it - from tweaking an existing design to designing a tangential knife.
 
@@ -44,6 +45,87 @@ I stumbled upon Lehaiver's CoreXY frame on thingiverse [here](https://www.thingi
 
 CoreXY kinematics with linear guides on 20mm aluminum extrusions. I ended up redesigning most of the parts in OnShape from scratch, but it's a great starting point. The linear guides are a huge improvement over the linear bearings, and the aluminum extrusions bring a lot of rigidity.
 
-Lehaiver made a [Laser mount](https://www.thingiverse.com/thing:2685298) with a dove tail plate that I tweaked to fit a pen lift and that makes belts easier to tighten. I also added a couple of captive nuts to fasten a bowden tube for cable management and a limit switch.
+## Gantry
+
+Lehaiver made a [Laser mount](https://www.thingiverse.com/thing:2685298) with a dove tail plate that I tweaked to fit a pen lift. Belts are easier to tighten on this one.
 
 ![Mount drawing](./mount-drawing.svg)
+
+ I also added a couple of captive nuts to fasten a bowden tube for cable management and a limit switch.
+![Limit switch mount](./limit-switch-mount.png)
+
+## Limit switches
+
+Speaking of limit switches: I added one on each axis. The Y axis switch is mounted on the gantry with the mount shown above, and the X axis one is mounted on the frame. As it's only a plotter and not a CNC, I'm ok with one switch per axis.
+
+The gantry switch hits the X axis end.
+
+![Limit switch X Axis](./switch-gantry.jpg)
+
+The Y axis is hit by the moving extrusion.
+
+![Limit switch Y Axis](./switch-y.jpg)
+
+Mount using a bracket on the extrusion:
+![Limit switch Y Axis Mount](./switch-extrusion-mount.png)
+
+There's a third switch on the pen lift.
+
+# Pen lift
+
+This took a lot of iterations - both for the vertical motion and for the pen holder.
+
+## Pen motion
+
+I wanted the pen motion to be fast and quiet. The kit I bought used linear bearings, a servo motor and a rubber band to pull down the pen. The small bearings had too much play, so I first tried bigger LM06uu:
+
+![lift bearings front](lift-bearings-front.png)
+![lift bearings back](lift-bearings-back.png)
+
+You might notice the servo must be inserted from the front in this design - which is a terrible idea. As I didn't add any clearance for the servo _wire_, I had to disassemble the servo itself to mount it.
+
+I tried with two bearings at first, and it lacked rigidity. Four was too many and was binding ; three was the sweet spot. The design is _ok_ but a bit heavy, linear bearings are still noisy, and the servo is even worse.
+
+I replaced the linear bearings with a linear guide, which is much smoother and quieter.
+
+import lift_servo_guide_front from "./lift-servo-guide-front.png";
+import lift_servo_guide_back from "./lift-servo-guide-back.png";
+
+<Image width={600} alt="lift linear guide front" src={lift_servo_guide_front} />
+<Image width={600} alt="lift linear guide back" src={lift_servo_guide_back} />
+
+It left the servo, so I tried a stepper motor, which is way more quieter and very accurate. It does require another limit switch for homing however. I experimented with switch-less homing but it was not reliable enough for my liking.
+
+Because I just cannot iterate reasonably on a design I tried a belt system, but eventually abandonned that idea - I liked the idea of being able to toggle the down motion on and off for a potential knife attachment, but I eventually realized I still didn't have a machine working.
+
+
+import lift_stepper_belt from "./lift-stepper-belt.png";
+
+<Image width={600} alt="lift linear guide front" src={lift_stepper_belt} />
+
+Back to a linear guide, with the stepper: this is the design I kept.
+
+import lift_stepper_guide_front from "./lift-stepper-guide-front.png";
+import lift_stepper_guide_back from "./lift-stepper-guide-back.png";
+
+<Image width={600} alt="lift linear guide front" src={lift_stepper_guide_front} />
+<Image width={600} alt="lift linear guide back" src={lift_stepper_guide_back} />
+
+The stepper has a custom arm with a bearing mounted on it.
+
+import lift_stepper_guide_arm from "./lift-stepper-guide-arm.png";
+
+<Image alt="bearing on arm" src={lift_stepper_guide_arm.png} />
+
+## Pen holder
+
+
+# FluidNC controller
+
+## Case
+
+## Pendant
+
+#  Tangential Knife
+
+## Magnetic encoder prototype
