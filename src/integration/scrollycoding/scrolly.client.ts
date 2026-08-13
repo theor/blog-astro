@@ -172,6 +172,29 @@ function setup(root: HTMLElement) {
   steps.forEach((step, index) => {
     step.addEventListener("click", () => select(index));
   });
+
+  /* Code mentions: hovering `[text](hover:name)` in a step's prose dims every line of
+     its panel that isn't tagged `// !hover name`. Selecting the step first means a
+     mention still works when its panel isn't the one on screen. */
+  const dim = (panel: HTMLElement, name: string | null) => {
+    for (const line of panel.querySelectorAll<HTMLElement>("pre .line")) {
+      line.classList.toggle("ch-dim", name !== null && line.dataset.chLine !== name);
+    }
+  };
+
+  steps.forEach((step, index) => {
+    const panel = panels[index];
+    if (!panel) return;
+
+    for (const mention of step.querySelectorAll<HTMLElement>("[data-ch-hover]")) {
+      const name = mention.dataset.chHover ?? "";
+      mention.addEventListener("mouseenter", () => {
+        select(index);
+        dim(panel, name);
+      });
+      mention.addEventListener("mouseleave", () => dim(panel, null));
+    }
+  });
 }
 
 export function initScrollycoding() {

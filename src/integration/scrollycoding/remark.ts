@@ -2,7 +2,7 @@ import { visit, SKIP } from "unist-util-visit";
 import { toString } from "mdast-util-to-string";
 import type { Root, RootContent, Code, Heading } from "mdast";
 
-import { extractCodeAnnotations, encodeAnnotations, SUPPORTED } from "./annotations";
+import { extractCodeAnnotations, encodeMeta, SUPPORTED } from "./annotations";
 
 export interface ComponentPaths {
   root: string;
@@ -104,6 +104,60 @@ interface Step {
   prose: RootContent[];
   code: Code | null;
   codeTitle: string | null;
+  numbers: boolean;
+}
+
+const newStep = (title: string): Step => ({
+  title,
+  prose: [],
+  code: null,
+  codeTitle: null,
+  numbers: false,
+});
+
+/**
+ * `! main.rs -n` -> filename plus flags. Flags are the `-x` tokens; everything else is
+ * the filename label shown above the panel.
+ */
+function parsePanelMeta(meta: string, warn: (msg: string) => void) {
+  const tokens = meta.trim().replace(/^!+/, "").trim().split(/\s+/).filter(Boolean);
+  const name: string[] = [];
+  let numbers = false;
+
+  for (const token of tokens) {
+    if (!token.startsWith("-")) {
+      name.push(token);
+      continue;
+    }
+    const flag = token.replace(/^-+/, "");
+    if (flag === "n" || flag === "numbers") numbers = true;
+    else warn(`unknown code block flag "${token}"`);
+  }
+
+  return { title: name.join(" ") || null, numbers };
+}
+
+/**
+ * Code mentions: `[the homing pass](hover:homing)` in the prose becomes a span the
+ * client script can hook, pairing with `// !hover homing` in the panel's code.
+ */
+function transformMentions(prose: RootContent[]): void {
+  for (const root of prose) {
+    visit(root as any, "link", (node: any, index: number | undefined, parent: any) => {
+      if (typeof node.url !== "string" || !node.url.startsWith("hover:")) return;
+      if (!parent || index === undefined) return;
+
+      parent.children[index] = {
+        type: "mdxJsxTextElement",
+        name: "span",
+        attributes: [
+          { type: "mdxJsxAttribute", name: "data-ch-hover", value: node.url.slice("hover:".length) },
+        ],
+        children: node.children,
+      };
+      return SKIP;
+    });
+  }
 }
 
 /** Splits a <Scrollycoding> element's children into steps. Throws via file.fail. */
@@ -113,7 +167,7 @@ function parseSteps(node: any, file: any): Step[] {
 
   for (const child of children) {
     if (isStepHeading(child)) {
-      steps.push({ title: parseTitle(child), prose: [], code: null, codeTitle: null });
+      steps.push(newStep(parseTitle(child)));
       continue;
     }
 
@@ -135,7 +189,13 @@ function parseSteps(node: any, file: any): Step[] {
         console.warn(`[scrollycoding] ${warning}`);
         continue;
       }
-      step.codeTitle = child.meta!.trim().replace(/^!+/, "").trim() || null;
+      const where = `${file.path ?? "unknown"}:${child.position?.start.line ?? "?"}`;
+      const { title, numbers } = parsePanelMeta(child.meta!, (msg) => {
+        file.message(msg, child.position);
+        console.warn(`[scrollycoding] ${msg} (${where})`);
+      });
+      step.codeTitle = title;
+      step.numbers = numbers;
       step.code = child;
       continue;
     }
@@ -146,6 +206,8 @@ function parseSteps(node: any, file: any): Step[] {
   if (steps.length === 0) {
     file.fail(`<${WRAPPER}> requires at least one "## !!steps" heading.`, node.position);
   }
+
+  for (const step of steps) transformMentions(step.prose);
 
   return steps;
 }
@@ -213,7 +275,7 @@ export function remarkScrollycoding(components: ComponentPaths) {
         step.code.value = code;
         // The filename label lives on the component; whatever is left in the meta is
         // forwarded to shiki as `meta.__raw` for markTransformer.ts to read.
-        step.code.meta = encodeAnnotations(annotations);
+        step.code.meta = encodeMeta(annotations, { numbers: step.numbers });
       }
     }
 

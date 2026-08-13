@@ -18,9 +18,11 @@ const START_MARKER = "\0start\0";
 const END_MARKER = "\0end\0";
 
 /** Annotation names we can actually render. Anything else warns rather than vanishing. */
-export const SUPPORTED = new Set(["mark"]);
+export const SUPPORTED = new Set(["mark", "diff", "hover"]);
 
 export const META_KEY = "ch-ann";
+/** Meta flag opting a block into line numbers (` ```rust ! main.rs -n `). */
+export const NUMBERS_FLAG = "ch-num";
 
 interface MultiLineRange {
   fromLineNumber: number;
@@ -169,60 +171,99 @@ export async function extractCodeAnnotations(
 /* -------------------------------------------------------------------------- */
 
 /**
- * `mark:2-3` for a line range, `mark:2@5-13` for an inline range (1-based, inclusive).
- * Emitted into the fence meta as `ch-ann=...`.
+ * Entries are `name:from-to` for a line range and `name:line@from-to` for an inline one
+ * (1-based, inclusive), with an optional `:query` suffix carrying the annotation's
+ * argument - `+`/`-` for diff, the group name for hover.
+ *
+ * The query is percent-encoded, which is what makes `:` safe as the separator:
+ * encodeURIComponent always escapes it, so it can never appear inside a query.
  */
-export function encodeAnnotations(annotations: RawAnnotation[]): string | null {
+export function encodeMeta(annotations: RawAnnotation[], flags: { numbers?: boolean }): string | null {
   const parts: string[] = [];
 
   for (const annotation of annotations) {
+    if (!SUPPORTED.has(annotation.name)) continue;
+
     for (const range of annotation.ranges) {
-      parts.push(
-        isInline(range)
-          ? `${annotation.name}:${range.lineNumber}@${range.fromColumn}-${range.toColumn}`
-          : `${annotation.name}:${range.fromLineNumber}-${range.toLineNumber}`,
-      );
+      const where = isInline(range)
+        ? `${range.lineNumber}@${range.fromColumn}-${range.toColumn}`
+        : `${range.fromLineNumber}-${range.toLineNumber}`;
+      const query = annotation.query ? `:${encodeURIComponent(annotation.query)}` : "";
+      parts.push(`${annotation.name}:${where}${query}`);
     }
   }
 
-  return parts.length ? `${META_KEY}=${parts.join(",")}` : null;
+  const tokens: string[] = [];
+  if (parts.length) tokens.push(`${META_KEY}=${parts.join(",")}`);
+  if (flags.numbers) tokens.push(NUMBERS_FLAG);
+
+  return tokens.length ? tokens.join(" ") : null;
 }
 
+export interface LineAnnotation {
+  name: string;
+  query: string;
+}
+export interface InlineAnnotation extends LineAnnotation {
+  line: number;
+  from: number;
+  to: number;
+}
 export interface DecodedAnnotations {
-  lines: Set<number>;
-  inline: Array<{ line: number; from: number; to: number }>;
+  /** line number -> annotations covering it */
+  blocks: Map<number, LineAnnotation[]>;
+  inline: InlineAnnotation[];
+  numbers: boolean;
+  hasDiff: boolean;
 }
 
-const ENTRY = /^([\w-]+):(\d+)(?:-(\d+))?(?:@(\d+)-(\d+))?$/;
+const BLOCK_RANGE = /^(\d+)-(\d+)$/;
+const INLINE_RANGE = /^(\d+)@(\d+)-(\d+)$/;
 const cache = new Map<string, DecodedAnnotations | null>();
 
-/** Reads back what `encodeAnnotations` wrote. Only `mark` is rendered today. */
+/** Reads back what `encodeMeta` wrote. */
 export function decodeAnnotations(raw: string | undefined): DecodedAnnotations | null {
   if (!raw) return null;
   if (cache.has(raw)) return cache.get(raw)!;
 
-  let decoded: DecodedAnnotations | null = null;
+  const blocks = new Map<number, LineAnnotation[]>();
+  const inline: InlineAnnotation[] = [];
+  const numbers = new RegExp(`\\b${NUMBERS_FLAG}\\b`).test(raw);
+  let hasDiff = false;
+
   const match = raw.match(new RegExp(`\\b${META_KEY}=([^\\s]+)`));
-
   if (match) {
-    const lines = new Set<number>();
-    const inline: DecodedAnnotations["inline"] = [];
-
     for (const entry of match[1].split(",")) {
-      const m = entry.match(ENTRY);
-      if (!m || !SUPPORTED.has(m[1])) continue;
+      const [name, where, ...rest] = entry.split(":");
+      if (!name || !where || !SUPPORTED.has(name)) continue;
+      const query = rest.length ? decodeURIComponent(rest.join(":")) : "";
 
-      if (m[4] !== undefined) {
-        inline.push({ line: Number(m[2]), from: Number(m[4]), to: Number(m[5]) });
-      } else {
-        const start = Number(m[2]);
-        const end = m[3] !== undefined ? Number(m[3]) : start;
-        for (let i = start; i <= end; i++) lines.add(i);
+      const inlineMatch = where.match(INLINE_RANGE);
+      if (inlineMatch) {
+        inline.push({
+          name,
+          query,
+          line: Number(inlineMatch[1]),
+          from: Number(inlineMatch[2]),
+          to: Number(inlineMatch[3]),
+        });
+        continue;
+      }
+
+      const blockMatch = where.match(BLOCK_RANGE);
+      if (!blockMatch) continue;
+      if (name === "diff") hasDiff = true;
+
+      for (let i = Number(blockMatch[1]); i <= Number(blockMatch[2]); i++) {
+        const list = blocks.get(i) ?? [];
+        list.push({ name, query });
+        blocks.set(i, list);
       }
     }
-
-    if (lines.size || inline.length) decoded = { lines, inline };
   }
+
+  const decoded =
+    blocks.size || inline.length || numbers ? { blocks, inline, numbers, hasDiff } : null;
 
   cache.set(raw, decoded);
   return decoded;

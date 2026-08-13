@@ -93,8 +93,50 @@ const n = Number(count);
     box-shadow: 0 0 0 1px rgba(136, 192, 208, 0.5);
   }
 
+  /* Gutter: line numbers and/or the diff sign, composed server-side into one string so
+     the two stay aligned instead of fighting over the same pseudo-element. */
+  .scrolly-panel :global(.line[data-ch-gutter]::before) {
+    content: attr(data-ch-gutter);
+    display: inline-block;
+    white-space: pre;
+    /* Left padding clears the diff bar, which is drawn inset on the line itself and
+       would otherwise sit on top of the digits. Applied to every gutter, not just diff
+       lines, so the columns stay aligned. */
+    padding-left: 0.75ch;
+    margin-right: 1.25ch;
+    opacity: 0.4;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .scrolly-panel :global(.line.ch-diff-add),
+  .scrolly-panel :global(.line.ch-diff-del) {
+    display: inline-block;
+    width: 100%;
+  }
+
+  .scrolly-panel :global(.line.ch-diff-add) {
+    background: rgba(63, 185, 80, 0.16);
+    box-shadow: inset 3px 0 0 #3fb950;
+  }
+
+  .scrolly-panel :global(.line.ch-diff-del) {
+    background: rgba(248, 81, 73, 0.16);
+    box-shadow: inset 3px 0 0 #f85149;
+  }
+
+  /* Code mentions: hovering a mention in the prose dims every line it doesn't name. */
+  .scrolly-panel :global(.line) {
+    transition: opacity 120ms linear;
+  }
+
+  .scrolly-panel :global(.line.ch-dim) {
+    opacity: 0.3;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .scrolly-panel {
+    .scrolly-panel,
+    .scrolly-panel :global(.line) {
       transition: none;
     }
   }

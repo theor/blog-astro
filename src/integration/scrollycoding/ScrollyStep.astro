@@ -55,6 +55,20 @@ const i = Number(index);
     margin-bottom: 0;
   }
 
+  /* Code mentions - `[text](hover:name)` in the prose. Not a link, so it gets an
+     affordance of its own rather than looking clickable. */
+  .scrolly-step :global([data-ch-hover]) {
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    cursor: help;
+  }
+
+  .scrolly-step :global([data-ch-hover]:hover) {
+    text-decoration-style: solid;
+    color: var(--color-primary, #005b99);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .scrolly-step {
       transition: none;
