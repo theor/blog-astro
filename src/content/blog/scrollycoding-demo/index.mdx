@@ -1,0 +1,120 @@
+---
+title: "Scrollycoding demo"
+author: "theor"
+type: "post"
+pubDate: 2026-08-12T10:00:00.000Z
+description: "Demo post exercising the scrollycoding integration: scroll-driven steps with a sticky code panel"
+tags: ["astro"]
+draft: true
+---
+
+A test post for the scrollycoding integration. Scroll through the steps below: the code
+panel on the right follows whichever step is crossing the middle of the viewport, and
+clicking a step selects it directly.
+
+<Scrollycoding>
+
+## !!steps Start with a main
+
+Every plotter job starts the same way — open the serial port and wait for the controller
+to announce itself. Nothing moves yet.
+
+```rust ! main.rs
+fn main() {
+    let port = open_serial("COM3");
+    wait_for_banner(&port);
+}
+```
+
+## !!steps Home the axes
+
+Before anything can be drawn, both axes need a known origin. Each one backs off its limit
+switch and re-approaches slowly.
+
+```rust ! main.rs
+// !mark(3:6)
+fn main() {
+    let port = open_serial("COM3");
+    wait_for_banner(&port);
+
+    home_axis(&port, Axis::X);
+    home_axis(&port, Axis::Y);
+}
+```
+
+## !!steps Lift the pen
+
+The pen lift gets its own homing pass — it has a limit switch too, since the stepper has
+no idea where the carriage sits at power-on.
+
+```rust ! main.rs
+fn main() {
+    let port = open_serial("COM3");
+    wait_for_banner(&port);
+
+    home_axis(&port, Axis::X);
+    home_axis(&port, Axis::Y);
+    // !mark
+    home_axis(&port, Axis::Z);
+}
+```
+
+## !!steps Stream the path
+
+With the machine homed, the path is streamed one segment at a time. The controller's
+planner buffer does the smoothing, so this loop can stay dumb.
+
+```rust ! main.rs
+// !mark(9:12)
+fn main() {
+    let port = open_serial("COM3");
+    wait_for_banner(&port);
+
+    home_axis(&port, Axis::X);
+    home_axis(&port, Axis::Y);
+    home_axis(&port, Axis::Z);
+
+    for segment in path.segments() {
+        send(&port, segment.to_gcode());
+        wait_for_ok(&port);
+    }
+}
+```
+
+</Scrollycoding>
+
+Back to normal prose after the block, at the usual article width.
+
+A second block on the same page, to check that multiple roots stay independent.
+
+<Scrollycoding>
+
+## !!steps Read the switch
+
+Polling is enough here — the switch only changes state a few times per job.
+
+```rust ! homing.rs
+fn triggered(pin: &Pin) -> bool {
+    pin.is_low()
+}
+```
+
+## !!steps Back off and re-approach
+
+The second, slower approach is what actually sets the origin; the first one just gets
+close fast.
+
+```rust ! homing.rs
+// !mark(4:7)
+fn home(axis: &mut Axis) {
+    seek(axis, FAST);
+
+    back_off(axis, 2.0);
+    seek(axis, SLOW);
+    axis.set_origin();
+}
+```
+
+</Scrollycoding>
+
+And prose again at the end of the post.
