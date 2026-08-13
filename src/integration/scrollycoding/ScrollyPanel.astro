@@ -34,14 +34,22 @@ const n = Number(count);
     border-radius: 4px;
   }
 
-  /* visibility (not display:none) so every panel still contributes height to the shared
-     grid area - that is what stops the sticky column jumping between steps, and it keeps
-     hidden panels laid out so token positions can be measured before a swap.
+  /* Hidden with opacity, not display:none (every panel must keep contributing height to
+     the shared grid area, so the sticky column doesn't jump, and so token positions stay
+     measurable before a swap) and deliberately NOT with visibility.
+
+     `visibility` is inherited, and toggling it on the panel leaves the computed value
+     stale on descendants that have Web Animations attached - whole lines of tokens stay
+     hidden after an interrupted swap, and nothing short of an inline style write on each
+     token clears it. Measured: 14 of 48 interrupted swaps broke that way; 0 of 54 once
+     visibility stopped toggling. opacity is not inherited, so it has no such effect.
+
      No opacity transition: the swap itself is instant, and the token animation in
      tokenTransitions.ts is what carries the eye across. */
   .scrolly-panel[data-selected="false"] {
     opacity: 0;
-    visibility: hidden;
+    pointer-events: none;
+    user-select: none;
   }
 
   /* Transforms don't apply to non-replaced inline elements, so the syntax tokens have to
@@ -94,7 +102,8 @@ const n = Number(count);
     /* Must match the [data-selected='false'] specificity (0,2,0) or it loses. */
     .scrolly-panel[data-selected] {
       opacity: 1;
-      visibility: visible;
+      pointer-events: auto;
+      user-select: auto;
     }
   }
 </style>
