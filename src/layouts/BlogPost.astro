@@ -1,21 +1,38 @@
 ---
 import type { CollectionEntry } from "astro:content";
+import { getCollection } from "astro:content";
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
-import FormattedDate from "../components/FormattedDate.astro";
 import { findImage} from "../utils";
 import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 type Props = CollectionEntry<"blog"> & {remarkPluginFrontmatter: Record<string, any>};
-const { title, description, pubDate, updatedDate, heroImage, banner, staticBanner } = Astro.props.data;
+const { title, heroImage, banner, staticBanner, serie_part } = Astro.props.data;
 const {id, remarkPluginFrontmatter } = Astro.props;
 const bannerImage = staticBanner ? staticBanner : banner;
-console.warn("STATIC ",staticBanner, banner, bannerImage)
+
+let prevPost: CollectionEntry<"blog"> | null = null;
+let nextPost: CollectionEntry<"blog"> | null = null;
+let seriesTotal = 0;
+
+if (serie_part !== undefined) {
+  const seriesPrefix = id.split('/')[0];
+  const seriesPosts = (await getCollection('blog', p =>
+    !p.data.draft &&
+    p.data.serie_part !== undefined &&
+    p.id.startsWith(seriesPrefix + '/')
+  )).sort((a, b) => (a.data.serie_part ?? 0) - (b.data.serie_part ?? 0));
+
+  seriesTotal = seriesPosts.length;
+  const currentIndex = seriesPosts.findIndex(p => p.id === id);
+  prevPost = currentIndex > 0 ? seriesPosts[currentIndex - 1] : null;
+  nextPost = currentIndex < seriesPosts.length - 1 ? seriesPosts[currentIndex + 1] : null;
+}
 ---
 
 <html lang="en">
   <head>
-    <BaseHead title={title} description={remarkPluginFrontmatter?.abstract || description}
+    <BaseHead title={title} description={remarkPluginFrontmatter?.abstract}
      image={bannerImage && await findImage(id + "/" + bannerImage)}
      />
     <style>
@@ -33,6 +50,27 @@ console.warn("STATIC ",staticBanner, banner, bannerImage)
       img {
         margin-bottom: 1em;
       }
+      .series-indicator {
+        font-size: 0.9em;
+        color: #555;
+        margin: 0.5rem 0 0;
+      }
+      .series-nav {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #ddd;
+        font-size: 0.9em;
+      }
+      .series-nav a {
+        max-width: 45%;
+      }
+      .series-nav .next {
+        margin-left: auto;
+        text-align: right;
+      }
     </style>
   </head>
 
@@ -42,20 +80,19 @@ console.warn("STATIC ",staticBanner, banner, bannerImage)
       <article>
         {heroImage && <img width={720} height={360} src={heroImage} alt="" />}
         <h1 class="title">{title}</h1>
-        {description && <h3>{description}</h3>}
         <BlogPostMetadata post={Astro.props}/>
+        {serie_part !== undefined && (
+          <p class="series-indicator">Part {serie_part} of {seriesTotal} in this series</p>
+        )}
 
-        <!-- {JSON.stringify(Astro.props)} -->
-        <!-- {pubDate && <FormattedDate date={pubDate} />}
-        {
-          updatedDate && (
-            <div class="last-updated-on">
-              Last updated on <FormattedDate date={updatedDate} />
-            </div>
-          )
-        } -->
         <hr />
         <slot />
+        {serie_part !== undefined && (prevPost || nextPost) && (
+          <nav class="series-nav">
+            {prevPost && <a href={`/${prevPost.id}/`}>← {prevPost.data.title}</a>}
+            {nextPost && <a class="next" href={`/${nextPost.id}/`}>{nextPost.data.title} →</a>}
+          </nav>
+        )}
       </article>
     </main>
     <Footer />
