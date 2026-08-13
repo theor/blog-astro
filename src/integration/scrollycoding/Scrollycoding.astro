@@ -1,0 +1,40 @@
+<div class="scrolly" data-scrolly data-selected-index="0">
+  <slot />
+</div>
+
+<script>
+  import { initScrollycoding } from "./scrolly.client";
+  initScrollycoding();
+</script>
+
+<style>
+  .scrolly {
+    --scrolly-max: 72rem;
+    --scrolly-gutter: 1rem;
+    --scrolly-top: 3rem;
+
+    /* Break out of `body { max-width: 75ch; margin: auto }` without ever using 100vw,
+       which would overflow by the scrollbar width. */
+    width: min(var(--scrolly-max), calc(100vw - 2 * var(--scrolly-gutter)));
+    margin-inline: calc(50% - min(calc(var(--scrolly-max) / 2), calc(50vw - var(--scrolly-gutter))));
+    margin-block: var(--spacing-8, 2rem);
+
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    gap: 0 var(--spacing-8, 2rem);
+    align-items: start;
+
+    /* Load-bearing: without room below the last step it can never reach the trigger
+       line at mid-viewport. Code Hike uses mb-[90vh] for the same reason. */
+    padding-bottom: 60vh;
+  }
+
+  @media (max-width: 60rem) {
+    .scrolly {
+      display: block;
+      width: auto;
+      margin-inline: 0;
+      padding-bottom: 0;
+    }
+  }
+</style>

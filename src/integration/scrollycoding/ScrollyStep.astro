@@ -1,0 +1,79 @@
+---
+interface Props {
+  index: string | number;
+  title?: string;
+}
+
+const { index, title } = Astro.props;
+const i = Number(index);
+---
+
+<section
+  class="scrolly-step"
+  data-scrolly-step
+  data-index={i}
+  data-selected={i === 0 ? "true" : "false"}
+>
+  {title && <h3 class="scrolly-step__title">{title}</h3>}
+  <slot />
+</section>
+
+<style>
+  .scrolly-step {
+    grid-column: 1;
+    padding: var(--spacing-4, 1rem) 0 var(--spacing-4, 1rem) var(--spacing-4, 1rem);
+    /* Steps need separation for the mid-viewport trigger to feel right, but a pure vh
+       gap reads as empty space next to long prose. */
+    margin-bottom: clamp(3rem, 18vh, 10rem);
+    border-left: 4px solid #e5e5e5;
+    cursor: pointer;
+    transition: border-color 150ms linear, opacity 150ms linear;
+  }
+
+  /* Dimming is gated on the script having run: without JS nothing ever changes the
+     selection, so every step must stay at full contrast. */
+  :global([data-scrolly-ready]) .scrolly-step {
+    opacity: 0.55;
+  }
+
+  .scrolly-step[data-selected="true"] {
+    border-left-color: var(--color-primary, #005b99);
+  }
+
+  :global([data-scrolly-ready]) .scrolly-step[data-selected="true"] {
+    opacity: 1;
+  }
+
+  .scrolly-step__title {
+    font-family: Montserrat, sans-serif;
+    font-size: 1.1rem;
+    margin: 0 0 var(--spacing-2, 0.5rem);
+  }
+
+  /* Slotted MDX prose carries the post's scope, not this component's. */
+  .scrolly-step :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scrolly-step {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 60rem) {
+    .scrolly-step,
+    .scrolly-step[data-selected="true"] {
+      margin-bottom: var(--spacing-4, 1rem);
+      cursor: auto;
+      /* Selection is meaningless once every panel is inline. */
+      border-left-color: #e5e5e5;
+    }
+
+    /* Must out-specify the ready-gated dim above. */
+    :global([data-scrolly-ready]) .scrolly-step,
+    :global([data-scrolly-ready]) .scrolly-step[data-selected="true"] {
+      opacity: 1;
+    }
+  }
+</style>

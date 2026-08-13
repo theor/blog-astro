@@ -1,0 +1,92 @@
+---
+interface Props {
+  index: string | number;
+  count: string | number;
+  title?: string;
+}
+
+const { index, count, title } = Astro.props;
+const i = Number(index);
+const n = Number(count);
+---
+
+<div
+  class="scrolly-panel"
+  data-scrolly-panel
+  data-index={i}
+  data-selected={i === 0 ? "true" : "false"}
+  style={`grid-row: 1 / span ${n};`}
+>
+  {title && <div class="scrolly-panel__name">{title}</div>}
+  <slot />
+</div>
+
+<style>
+  .scrolly-panel {
+    grid-column: 2;
+    position: sticky;
+    top: var(--scrolly-top, 3rem);
+    align-self: start;
+    max-height: calc(100vh - 2 * var(--scrolly-top, 3rem));
+    /* Keeps tall code reachable, and zeroes the item's automatic minimum size so a
+       long panel can't inflate the step rows. */
+    overflow: auto;
+    border-radius: 4px;
+    transition: opacity 150ms linear;
+  }
+
+  /* visibility (not display:none) so every panel still contributes height to the shared
+     grid area - that is what stops the sticky column jumping between steps. */
+  .scrolly-panel[data-selected="false"] {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .scrolly-panel__name {
+    font-family: Montserrat, sans-serif;
+    font-size: 0.8rem;
+    padding: 0.35rem 0.75rem;
+    background: #3b4252;
+    color: #d8dee9;
+    border-radius: 4px 4px 0 0;
+  }
+
+  /* The <pre> is slotted MDX content, so it carries the post's scope. Let shiki's inline
+     nord background show through and drop the global bottom margin. */
+  .scrolly-panel :global(pre) {
+    margin: 0;
+    border-radius: 0 0 4px 4px;
+  }
+
+  .scrolly-panel__name + :global(pre) {
+    border-radius: 0 0 4px 4px;
+  }
+
+  .scrolly-panel :global(.line.ch-mark) {
+    display: inline-block;
+    width: 100%;
+    background: rgba(136, 192, 208, 0.16);
+    box-shadow: inset 3px 0 0 #88c0d0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scrolly-panel {
+      transition: none;
+    }
+  }
+
+  @media (max-width: 60rem) {
+    .scrolly-panel {
+      position: static;
+      max-height: none;
+      overflow: visible;
+      margin-bottom: var(--spacing-8, 2rem);
+    }
+
+    /* Must match the [data-selected='false'] specificity (0,2,0) or it loses. */
+    .scrolly-panel[data-selected] {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+</style>
