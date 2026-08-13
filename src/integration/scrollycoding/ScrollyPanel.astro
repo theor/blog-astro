@@ -32,14 +32,22 @@ const n = Number(count);
        long panel can't inflate the step rows. */
     overflow: auto;
     border-radius: 4px;
-    transition: opacity 150ms linear;
   }
 
   /* visibility (not display:none) so every panel still contributes height to the shared
-     grid area - that is what stops the sticky column jumping between steps. */
+     grid area - that is what stops the sticky column jumping between steps, and it keeps
+     hidden panels laid out so token positions can be measured before a swap.
+     No opacity transition: the swap itself is instant, and the token animation in
+     tokenTransitions.ts is what carries the eye across. */
   .scrolly-panel[data-selected="false"] {
     opacity: 0;
     visibility: hidden;
+  }
+
+  /* Transforms don't apply to non-replaced inline elements, so the syntax tokens have to
+     be inline-block for the FLIP to move them. */
+  .scrolly-panel :global(pre .line > span) {
+    display: inline-block;
   }
 
   .scrolly-panel__name {

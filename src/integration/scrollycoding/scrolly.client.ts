@@ -6,7 +6,28 @@
  * mid-height, so a step "intersects" only while it crosses that trigger line.
  */
 
+import { transitionTokens } from "./tokenTransitions";
+
 const TRIGGER = 0.5; // fraction of the viewport height
+
+const prefersReducedMotion = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/**
+ * Pin every code block to the height of the tallest one. All panels overlap in a single
+ * grid area, so without this the dark frame resizes on each swap and the token animation
+ * reads as a jump.
+ */
+function equalizeHeights(panels: HTMLElement[]) {
+  const blocks = panels
+    .map((panel) => panel.querySelector<HTMLElement>("pre"))
+    .filter((pre): pre is HTMLElement => pre !== null);
+  if (blocks.length === 0) return;
+
+  for (const pre of blocks) pre.style.minHeight = "";
+  const tallest = Math.max(...blocks.map((pre) => pre.offsetHeight));
+  for (const pre of blocks) pre.style.minHeight = `${tallest}px`;
+}
 
 function setup(root: HTMLElement) {
   if (root.dataset.scrollyReady) return;
@@ -23,11 +44,19 @@ function setup(root: HTMLElement) {
 
   const select = (index: number) => {
     if (index === selected || index < 0 || index >= steps.length) return;
+
+    const from = panels[selected];
+    const to = panels[index];
+
     selected = index;
     root.dataset.selectedIndex = String(index);
     for (const list of [steps, panels]) {
       list.forEach((el, i) => el.setAttribute("data-selected", i === index ? "true" : "false"));
     }
+
+    // Both panels are laid out either way (hidden panels keep their layout), so this
+    // runs after the swap without needing to defer a frame.
+    if (from && to && !prefersReducedMotion()) transitionTokens(from, to);
   };
 
   const onIntersect: IntersectionObserverCallback = (entries) => {
@@ -78,14 +107,22 @@ function setup(root: HTMLElement) {
     build();
   };
 
+  equalizeHeights(panels);
   syncHeight();
-  // Re-measure once everything has laid out: a late horizontal scrollbar shifts vh.
-  window.addEventListener("load", syncHeight);
+  // Re-measure once everything has laid out: a late horizontal scrollbar shifts vh, and
+  // web fonts can change the code block heights.
+  window.addEventListener("load", () => {
+    equalizeHeights(panels);
+    syncHeight();
+  });
 
   let frame = 0;
   window.addEventListener("resize", () => {
     cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(syncHeight);
+    frame = requestAnimationFrame(() => {
+      equalizeHeights(panels);
+      syncHeight();
+    });
   });
 
   steps.forEach((step, index) => {
