@@ -6,7 +6,11 @@
  * mid-height, so a step "intersects" only while it crosses that trigger line.
  */
 
-import { transitionTokens } from "./tokenTransitions";
+import {
+  transitionTokens,
+  MAX_TRANSITION_BUDGET,
+  MIN_TRANSITION_BUDGET,
+} from "./tokenTransitions";
 
 const TRIGGER = 0.5; // fraction of the viewport height
 
@@ -41,6 +45,8 @@ function setup(root: HTMLElement) {
   let selected = 0;
   let vh = 0;
   let observer: IntersectionObserver | null = null;
+  let inFlight: Animation[] = [];
+  let lastSwapAt = 0;
 
   const select = (index: number) => {
     if (index === selected || index < 0 || index >= steps.length) return;
@@ -48,15 +54,30 @@ function setup(root: HTMLElement) {
     const from = panels[selected];
     const to = panels[index];
 
+    // Clear anything still in flight before measuring. Added tokens are held at opacity 0
+    // through their delay, so a leftover animation would keep part of the panel invisible.
+    for (const animation of inFlight) animation.cancel();
+    inFlight = [];
+
     selected = index;
     root.dataset.selectedIndex = String(index);
     for (const list of [steps, panels]) {
       list.forEach((el, i) => el.setAttribute("data-selected", i === index ? "true" : "false"));
     }
 
+    if (!from || !to || prefersReducedMotion()) return;
+
+    // Scale the choreography to how fast selections are actually arriving: a deliberate
+    // click gets the full animation, a fast scroll gets a short one that finishes before
+    // the next swap instead of being restarted half-done.
+    const now = performance.now();
+    const sinceLast = lastSwapAt === 0 ? Infinity : now - lastSwapAt;
+    lastSwapAt = now;
+    const budget = Math.min(MAX_TRANSITION_BUDGET, Math.max(MIN_TRANSITION_BUDGET, sinceLast));
+
     // Both panels are laid out either way (hidden panels keep their layout), so this
     // runs after the swap without needing to defer a frame.
-    if (from && to && !prefersReducedMotion()) transitionTokens(from, to);
+    inFlight = transitionTokens(from, to, budget);
   };
 
   const onIntersect: IntersectionObserverCallback = (entries) => {

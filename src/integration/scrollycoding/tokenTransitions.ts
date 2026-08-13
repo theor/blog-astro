@@ -11,7 +11,15 @@
  * - hidden panels still have layout.
  */
 
-const MAX_TRANSITION_DURATION = 900; // ms; delays and durations below are fractions of it
+/**
+ * Total budget the whole choreography is scaled into. Code Hike uses a flat 900ms, which
+ * assumes swaps are deliberate and spaced out. Scroll fires them far faster than that,
+ * and because added tokens are held at opacity 0 through their delay, a long budget
+ * leaves the panel visibly half-empty and every interruption restarts it. The caller
+ * scales this to the observed swap rate instead - see MIN/MAX below.
+ */
+export const MAX_TRANSITION_BUDGET = 900;
+export const MIN_TRANSITION_BUDGET = 180;
 
 const config = {
   moveDuration: 0.28,
@@ -143,10 +151,11 @@ function animate(
   duration: number,
   delay: number,
   easing: string,
-) {
-  element.animate(keyframes, {
-    duration: duration * MAX_TRANSITION_DURATION,
-    delay: delay * MAX_TRANSITION_DURATION,
+  budget: number,
+): Animation {
+  return element.animate(keyframes, {
+    duration: duration * budget,
+    delay: delay * budget,
     easing,
     fill: "both",
   });
@@ -155,8 +164,15 @@ function animate(
 /**
  * Animate the incoming panel's tokens from the outgoing panel's layout. Both panels must
  * already be laid out; call this immediately after flipping the selection.
+ *
+ * Returns the animations it started so the caller can cancel them if another swap
+ * arrives before they settle.
  */
-export function transitionTokens(from: HTMLElement, to: HTMLElement) {
+export function transitionTokens(
+  from: HTMLElement,
+  to: HTMLElement,
+  budget: number = MAX_TRANSITION_BUDGET,
+): Animation[] {
   const fromSnapshots = tokensOf(from).map(toSnapshot);
   const toElements = tokensOf(to);
   const toSnapshots = toElements.map(toSnapshot);
@@ -177,21 +193,25 @@ export function transitionTokens(from: HTMLElement, to: HTMLElement) {
 
   const { added, moved } = groupFlips(flips);
   const moveDuration = fullStaggerDuration(moved.length, config.moveDuration);
+  const animations: Animation[] = [];
 
   moved.forEach((group, groupIndex) => {
     const delay = staggerDelay(groupIndex, moved.length, moveDuration, config.moveDuration);
     for (const { element, first, last } of group) {
       const dx = first!.x - last.x;
       const dy = first!.y - last.y;
-      animate(
-        element,
-        {
-          translate: [`${dx}px ${dy}px`, "0px 0px"],
-          color: [first!.color, last.color],
-        },
-        config.moveDuration,
-        delay,
-        "ease-in-out",
+      animations.push(
+        animate(
+          element,
+          {
+            translate: [`${dx}px ${dy}px`, "0px 0px"],
+            color: [first!.color, last.color],
+          },
+          config.moveDuration,
+          delay,
+          "ease-in-out",
+          budget,
+        ),
       );
     }
   });
@@ -201,6 +221,10 @@ export function transitionTokens(from: HTMLElement, to: HTMLElement) {
   addedFlips.forEach((flip, index) => {
     const delay =
       moveDuration + staggerDelay(index, addedFlips.length, addDuration, config.addDuration);
-    animate(flip.element, { opacity: [0, 1] }, config.addDuration, delay, "ease-out");
+    animations.push(
+      animate(flip.element, { opacity: [0, 1] }, config.addDuration, delay, "ease-out", budget),
+    );
   });
+
+  return animations;
 }
