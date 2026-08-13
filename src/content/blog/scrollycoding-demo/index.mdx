@@ -94,7 +94,7 @@ A second block on the same page, to check that multiple roots stay independent.
 
 Polling is enough here — the switch only changes state a few times per job.
 
-```rust ! homing.rs
+```rust ! homing.rs -n
 fn triggered(pin: &Pin) -> bool {
     pin.is_low()
 }
@@ -146,6 +146,36 @@ fn home(axis: &mut Axis) {
     // !diff -
     seek(axis, SLOW);
     // !diff +
+    seek(axis, CREEP);
+    axis.set_origin();
+}
+```
+
+## !!steps Just the approach
+
+Everything outside the approach recedes, so only the part being discussed stays legible.
+
+```rust ! homing.rs
+fn home(axis: &mut Axis) {
+    seek(axis, FAST);
+
+    // !focus(1:3)
+    back_off(axis, 2.0);
+    seek(axis, CREEP);
+    axis.set_origin();
+}
+```
+
+## !!steps Why back off at all
+
+A callout points at the token it is talking about.
+
+```rust ! homing.rs
+fn home(axis: &mut Axis) {
+    seek(axis, FAST);
+
+    // !callout[/back_off/] The switch stays closed past the trigger point, so we have to clear it before the slow pass.
+    back_off(axis, 2.0);
     seek(axis, CREEP);
     axis.set_origin();
 }

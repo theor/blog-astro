@@ -18,7 +18,7 @@ const START_MARKER = "\0start\0";
 const END_MARKER = "\0end\0";
 
 /** Annotation names we can actually render. Anything else warns rather than vanishing. */
-export const SUPPORTED = new Set(["mark", "diff", "hover"]);
+export const SUPPORTED = new Set(["mark", "diff", "hover", "focus", "callout"]);
 
 export const META_KEY = "ch-ann";
 /** Meta flag opting a block into line numbers (` ```rust ! main.rs -n `). */
@@ -215,6 +215,8 @@ export interface DecodedAnnotations {
   inline: InlineAnnotation[];
   numbers: boolean;
   hasDiff: boolean;
+  /** When set, every line that isn't focused is dimmed. */
+  hasFocus: boolean;
 }
 
 const BLOCK_RANGE = /^(\d+)-(\d+)$/;
@@ -230,6 +232,7 @@ export function decodeAnnotations(raw: string | undefined): DecodedAnnotations |
   const inline: InlineAnnotation[] = [];
   const numbers = new RegExp(`\\b${NUMBERS_FLAG}\\b`).test(raw);
   let hasDiff = false;
+  let hasFocus = false;
 
   const match = raw.match(new RegExp(`\\b${META_KEY}=([^\\s]+)`));
   if (match) {
@@ -253,6 +256,7 @@ export function decodeAnnotations(raw: string | undefined): DecodedAnnotations |
       const blockMatch = where.match(BLOCK_RANGE);
       if (!blockMatch) continue;
       if (name === "diff") hasDiff = true;
+      if (name === "focus") hasFocus = true;
 
       for (let i = Number(blockMatch[1]); i <= Number(blockMatch[2]); i++) {
         const list = blocks.get(i) ?? [];
@@ -263,7 +267,9 @@ export function decodeAnnotations(raw: string | undefined): DecodedAnnotations |
   }
 
   const decoded =
-    blocks.size || inline.length || numbers ? { blocks, inline, numbers, hasDiff } : null;
+    blocks.size || inline.length || numbers
+      ? { blocks, inline, numbers, hasDiff, hasFocus }
+      : null;
 
   cache.set(raw, decoded);
   return decoded;

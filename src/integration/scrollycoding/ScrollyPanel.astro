@@ -53,8 +53,10 @@ const n = Number(count);
   }
 
   /* Transforms don't apply to non-replaced inline elements, so the syntax tokens have to
-     be inline-block for the FLIP to move them. */
-  .scrolly-panel :global(pre .line > span) {
+     be inline-block for the FLIP to move them. Callouts are excluded: they are not
+     tokens, and this selector outranks `.ch-callout { display: block }`, which would
+     otherwise leave the callout sitting inline at the end of its line. */
+  .scrolly-panel :global(pre .line > span:not(.ch-callout)) {
     display: inline-block;
   }
 
@@ -132,6 +134,43 @@ const n = Number(count);
 
   .scrolly-panel :global(.line.ch-dim) {
     opacity: 0.3;
+  }
+
+  /* Focus: when a block has any !focus, everything else recedes. */
+  .scrolly-panel :global(pre[data-ch-focus] .line:not(.ch-focus)) {
+    opacity: 0.45;
+  }
+
+  /* Callouts hang under their line, so the line has to become a block box. */
+  .scrolly-panel :global(.line.ch-has-callout) {
+    display: inline-block;
+    width: 100%;
+  }
+
+  .scrolly-panel :global(.ch-callout) {
+    display: block;
+    position: relative;
+    width: fit-content;
+    margin: 0.5em 0 0.25em;
+    padding: 0.15em 0.7em;
+    border: 1px solid #4c566a;
+    border-radius: 4px;
+    background: #3b4252;
+    color: #e5e9f0;
+    white-space: break-spaces;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .scrolly-panel :global(.ch-callout__arrow) {
+    position: absolute;
+    top: -1px;
+    width: 8px;
+    height: 8px;
+    border-left: 1px solid #4c566a;
+    border-top: 1px solid #4c566a;
+    background: #3b4252;
+    transform: rotate(45deg) translateY(-50%);
   }
 
   @media (prefers-reduced-motion: reduce) {

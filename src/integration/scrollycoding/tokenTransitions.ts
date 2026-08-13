@@ -42,9 +42,15 @@ interface Flip {
   last: Snapshot;
 }
 
-/** Leaf elements inside the code block - i.e. the individual syntax token spans. */
+/**
+ * Leaf elements inside the code block - i.e. the individual syntax token spans.
+ * Callout chrome is excluded: it is decoration, not code, and its arrow would otherwise
+ * be matched as an empty token and add noise to the diff.
+ */
 export function tokensOf(panel: HTMLElement): HTMLElement[] {
-  return Array.from(panel.querySelectorAll<HTMLElement>("pre :not(:has(*))"));
+  return Array.from(panel.querySelectorAll<HTMLElement>("pre :not(:has(*))")).filter(
+    (el) => !el.closest(".ch-callout"),
+  );
 }
 
 function toSnapshot(el: HTMLElement): Snapshot {
