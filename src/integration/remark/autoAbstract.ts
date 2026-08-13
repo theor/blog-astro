@@ -27,7 +27,6 @@ export function autoAbstract(isDev: boolean): RemarkPlugin {
         //     frontmatter.abstract = "Lorem Ipsum";
         //     return;
         // }
-        console.warn("make autoAbstract")
         // console.warn("  autoAbstract", frontmatter, new Error().stack)
         let timeToRead = Math.max(1, Math.round(toString(tree).split(/[ \n]/).length / 265));
         let excerpt = "";

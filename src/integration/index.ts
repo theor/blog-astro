@@ -76,8 +76,7 @@ export function myAstro(): AstroIntegration  {
             // 'astro:build:generated': async ({ dir }) => {
             //     await ssg('src/pages', dir.pathname, cacheDir, staticImages);
             // },
-            'astro:config:done': (options) => {
-                console.log(options.config.markdown.remarkPlugins)
+            'astro:config:done': (_options) => {
             },
         },
     };
