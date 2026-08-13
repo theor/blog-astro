@@ -5,69 +5,84 @@ import { Icon } from "astro-icon/components";
 ---
 
 <header>
-    <div class="title">
-      <video autoplay muted poster="/profile-pic.png" preload="metadata" alt="logo">
-        <source src="/out-1.webm"  type="video/webm"/>
-        <source src="/out-1.mp4"  type="video/mp4"/>
-        </video>
-        <h1>
-          {SITE_TITLE}
-        </h1>
-        <span>{SITE_DESCRIPTION}</span>
-  <nav>
-    <HeaderLink href="/">Home</HeaderLink>
-    <HeaderLink href="/about">About</HeaderLink>
-    <!-- <HeaderLink href="https://twitter.com/astrodotbuild" target="_blank">Twitter</HeaderLink> -->
-    <HeaderLink href="https://github.com/theor" target="_blank">
-      GitHub
-    </HeaderLink>
-    <HeaderLink href="/rss.xml">
-      <Icon name="mdi:rss" />
-    </HeaderLink>
-  </nav>
-</div>
+  <div class="title">
+    <a href="/">
+      <video
+        autoplay
+        muted
+        poster="/profile-pic.png"
+        preload="metadata"
+        alt="logo"
+      >
+        <source src="/out-1.webm" type="video/webm" />
+        <source src="/out-1.mp4" type="video/mp4" />
+      </video>
+    </a>
+    <a class="site-title" href="/">
+      <h1>
+        {SITE_TITLE}
+      </h1>
+    </a>
+    <span>{SITE_DESCRIPTION}</span>
+    <nav>
+      <HeaderLink href="/">Home</HeaderLink>
+      <HeaderLink href="/about">About</HeaderLink>
+      <!-- <HeaderLink href="https://twitter.com/astrodotbuild" target="_blank">Twitter</HeaderLink> -->
+      <HeaderLink href="https://github.com/theor" target="_blank">
+        GitHub
+      </HeaderLink>
+      <HeaderLink href="/rss.xml">
+        <Icon name="mdi:rss" />
+      </HeaderLink>
+    </nav>
+  </div>
 </header>
 <style lang="scss">
   header {
+    a.site-title {
+      text-decoration: none;
+      color: inherit;
+    }
     font-family: Montserrat, sans-serif;
     margin: 0em 0 2em;
     nav {
-        margin: 1em 1em 1em 0.5em;
+      margin: 1em 1em 1em 0.5em;
     }
     .title {
-        display:flex;
-        flex-wrap: wrap;
-        align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
     }
-    h1 { 
-        margin: 0;
+    h1 {
+      margin: 0;
     }
     span {
-        margin: 15px;
+      margin: 15px;
 
-        font-size: 1.2em;
-        align-self: end;
+      font-size: 1.2em;
+      align-self: end;
     }
-    img,video {
-        width: 64px;
-        height: 64px;
+    img,
+    video {
+      width: 64px;
+      height: 64px;
     }
-}
+  }
 </style>
 <script>
   const v = document.querySelector("header .title video")!;
   let intervalRewind;
-  v.addEventListener("mouseout", e => {
+  v.addEventListener("mouseout", (e) => {
     clearInterval(intervalRewind);
     v.play();
-   });
-  v.addEventListener("mouseover", e => {
-    intervalRewind = setInterval(function(){
-       v.pause();
-       v.currentTime -= 0.1
-       if(v.currentTime == 0){
-           clearInterval(intervalRewind);
-       }
-   },25);
+  });
+  v.addEventListener("mouseover", (e) => {
+    intervalRewind = setInterval(function () {
+      v.pause();
+      v.currentTime -= 0.1;
+      if (v.currentTime == 0) {
+        clearInterval(intervalRewind);
+      }
+    }, 25);
   });
 </script>
