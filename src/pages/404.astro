@@ -1,8 +1,13 @@
 ---
 import BaseHead from "../components/BaseHead.astro";
 import Header from "../components/Header.astro";
-// import Layout from "../layouts/BlogPost.astro";
-const title = "404";
+import Footer from "../components/Footer.astro";
+import { getCollection } from "astro:content";
+
+const title = "404 — Not Found";
+const recentPosts = (await getCollection("blog", p => !p.data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 5);
 ---
 
 <html lang="en">
@@ -17,11 +22,12 @@ const title = "404";
         border-top: 1px solid #ddd;
         margin: 1rem 0;
       }
-      .last-updated-on {
-        font-style: italic;
+      ul {
+        list-style: none;
+        padding: 0;
       }
-      img {
-        margin-bottom: 1em;
+      ul li {
+        margin-bottom: 0.5rem;
       }
     </style>
   </head>
@@ -30,12 +36,17 @@ const title = "404";
     <Header />
     <main>
       <article>
-        <h1 class="title">{title}</h1>
+        <h1 class="title">404</h1>
         <hr />
-  <p>
-    Not found.
-  </p>
-</article>
-</main>
-</body>
+        <p>This page doesn't exist. <a href="/">Go back home</a>.</p>
+        <h2>Recent posts</h2>
+        <ul>
+          {recentPosts.map(p => (
+            <li><a href={`/${p.id}/`}>{p.data.title}</a></li>
+          ))}
+        </ul>
+      </article>
+    </main>
+    <Footer />
+  </body>
 </html>
