@@ -33,6 +33,28 @@ function equalizeHeights(panels: HTMLElement[]) {
   for (const pre of blocks) pre.style.minHeight = `${tallest}px`;
 }
 
+/** The narrow layout shows every panel inline, so there is no selection to serve. */
+const isNarrowLayout = () => window.matchMedia("(max-width: 60rem)").matches;
+
+/**
+ * The last step can only be selected if the page can scroll far enough for it to reach
+ * the trigger line, which needs `(1 - TRIGGER) * vh` of document below its top. Whatever
+ * follows the block already counts towards that - trailing prose, another block, the
+ * footer - so only add the shortfall rather than a blanket 60vh of dead space.
+ */
+function updateTailSpacer(root: HTMLElement, steps: HTMLElement[], vh: number) {
+  root.style.paddingBottom = "0px";
+  if (isNarrowLayout() || vh < 8) return;
+
+  const lastStep = steps[steps.length - 1];
+  const lastStepTop = lastStep.getBoundingClientRect().top + window.scrollY;
+  const available = document.documentElement.scrollHeight - lastStepTop;
+  const needed = (1 - TRIGGER) * vh + 8; // 8px covers the trigger band and rounding
+
+  const shortfall = Math.max(0, Math.ceil(needed - available));
+  if (shortfall > 0) root.style.paddingBottom = `${shortfall}px`;
+}
+
 function setup(root: HTMLElement) {
   if (root.dataset.scrollyReady) return;
   root.dataset.scrollyReady = "1";
@@ -128,22 +150,23 @@ function setup(root: HTMLElement) {
     build();
   };
 
-  equalizeHeights(panels);
-  syncHeight();
-  // Re-measure once everything has laid out: a late horizontal scrollbar shifts vh, and
-  // web fonts can change the code block heights.
-  window.addEventListener("load", () => {
+  // Order matters: equalising the panels changes the document height, which the tail
+  // spacer is measured against.
+  const refresh = () => {
     equalizeHeights(panels);
     syncHeight();
-  });
+    updateTailSpacer(root, steps, vh);
+  };
+
+  refresh();
+  // Re-measure once everything has laid out: a late horizontal scrollbar shifts vh, and
+  // web fonts and images change the heights the spacer depends on.
+  window.addEventListener("load", refresh);
 
   let frame = 0;
   window.addEventListener("resize", () => {
     cancelAnimationFrame(frame);
-    frame = requestAnimationFrame(() => {
-      equalizeHeights(panels);
-      syncHeight();
-    });
+    frame = requestAnimationFrame(refresh);
   });
 
   steps.forEach((step, index) => {

@@ -24,9 +24,11 @@
     gap: 0 var(--spacing-8, 2rem);
     align-items: start;
 
-    /* Load-bearing: without room below the last step it can never reach the trigger
-       line at mid-viewport. Code Hike uses mb-[90vh] for the same reason. */
-    padding-bottom: 60vh;
+    /* No tail spacer here on purpose. The last step needs room below it to reach the
+       trigger line at mid-viewport, but how much is missing depends on what follows the
+       block on the page - often nothing is needed at all. scrolly.client.ts measures the
+       shortfall and sets padding-bottom to exactly that. With JS off there is no scroll
+       selection to serve, so zero is right. */
   }
 
   @media (max-width: 60rem) {
@@ -34,7 +36,6 @@
       display: block;
       width: auto;
       margin-inline: 0;
-      padding-bottom: 0;
     }
   }
 </style>
