@@ -17,6 +17,9 @@ const TRIGGER = 0.5; // fraction of the viewport height
 const prefersReducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/** The narrow layout shows every panel inline, so there is no selection to serve. */
+const isNarrowLayout = () => window.matchMedia("(max-width: 60rem)").matches;
+
 /**
  * Pin every code block to the height of the tallest one. All panels overlap in a single
  * grid area, so without this the dark frame resizes on each swap and the token animation
@@ -28,13 +31,17 @@ function equalizeHeights(panels: HTMLElement[]) {
     .filter((pre): pre is HTMLElement => pre !== null);
   if (blocks.length === 0) return;
 
+  // Cleared first so a resize back to narrow releases the pin, not just so the natural
+  // heights below are measurable.
   for (const pre of blocks) pre.style.minHeight = "";
+  // Stacked panels have no shared frame to keep steady and no animation to protect, so
+  // pinning there only pads every short block out to the tallest one - on the layout
+  // with the least vertical room to spare.
+  if (isNarrowLayout()) return;
+
   const tallest = Math.max(...blocks.map((pre) => pre.offsetHeight));
   for (const pre of blocks) pre.style.minHeight = `${tallest}px`;
 }
-
-/** The narrow layout shows every panel inline, so there is no selection to serve. */
-const isNarrowLayout = () => window.matchMedia("(max-width: 60rem)").matches;
 
 /**
  * The last step can only be selected if the page can scroll far enough for it to reach
@@ -87,7 +94,11 @@ function setup(root: HTMLElement) {
       list.forEach((el, i) => el.setAttribute("data-selected", i === index ? "true" : "false"));
     }
 
-    if (!from || !to || prefersReducedMotion()) return;
+    // The token FLIP only makes sense when one panel replaces another in the same grid
+    // area. On the narrow layout every panel is already on screen, so animating the
+    // incoming one just makes a block the reader is looking at shuffle itself - and it
+    // pays for an LCS over every token to do it.
+    if (!from || !to || prefersReducedMotion() || isNarrowLayout()) return;
 
     // Scale the choreography to how fast selections are actually arriving: a deliberate
     // click gets the full animation, a fast scroll gets a short one that finishes before
