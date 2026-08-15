@@ -1,0 +1,316 @@
+---
+title: "Plasma, scrollycoded"
+author: "theor"
+type: "post"
+pubDate: 2026-08-13T10:00:00.000Z
+description: "Draft: the plasma section of the rust/wasm demo effects article, converted to a scrollycoding block"
+tags: ["rust", "wasm", "demoscene"]
+draft: true
+---
+import Run from "../rust-wasm-demo-effects/_Run.astro"
+
+Draft conversion of the plasma section of [Demo effects using Rust and WebAssembly](/rust-wasm-demo-effects/)
+into a single scrollycoding block. Two files evolve in the sticky panel: `palette.rs`, the
+lookup table, and `plasma.rs`, the per-pixel loop that indexes into it.
+
+<Run data-sample="Plasma" />
+
+The plasma effect is typical of demo effects: trivial to do today with a GPU, impressive
+when it was written on a CPU, often without a floating point unit. The gist of it is to
+compute a color for each pixel using some combination of trigonometric functions; usually,
+the function returns a value used as an index in a pre-computed palette.
+
+<Scrollycoding>
+
+## !!steps A greyscale palette
+
+An indexed palette used to be a requirement — the Amstrad CPC had at best a 16-color
+palette out of 27 — but it is still more performant today, and it opens the door to
+palette shifting. Start with the simplest one possible: a lerp from black to white,
+emitting ABGR `u32` colors, which is the format the HTML canvas expects.
+
+```rust ! palette.rs
+fn col32((r, g, b): (u8, u8, u8)) -> u32 {
+    255 << 24 | (b as u32) << 16 | (g as u32) << 8 | (r as u32)
+}
+
+const PALETTE_SIZE: usize = 256;
+let mut palette: Vec<u32> = vec![0; PALETTE_SIZE];
+
+for i in 0..PALETTE_SIZE {
+    let c = i as i32;
+    palette[i] = col32((c as u8, c as u8, c as u8));
+}
+```
+
+## !!steps Concentric circles
+
+Now the effect itself. For every pixel, the [distance to the center](hover:dist) is
+[scaled up to get multiple bands](hover:bands) and [piped into a sine](hover:osc) so it
+oscillates. The `[-1,1]` result is remapped to the palette range and used as an index.
+
+<Run data-sample="Plasma" data-static="true" data-step="FixedCircle" data-palette="Greyscale" data-disablepane="true"/>
+
+```rust ! plasma.rs
+for y in 0..self.h {
+    for x in 0..self.w {
+        // position as ratios, in the [0,1] range
+        let fx = x as f32 / (self.w - 1) as f32;
+        let fy = y as f32 / (self.h - 1) as f32;
+
+        // palette index
+        let v = (
+            // !hover dist
+            vec2(fx - 0.5, fy - 0.5)
+            // !hover bands
+            * 16.0
+        )
+        // !hover dist
+        .length()
+        // !hover osc
+        .sin();
+
+        // buffer index
+        let i = y * self.w + x;
+        b[i] = self.palette[
+            remap(
+                v,
+                -1.0..=1.0,
+                0.0..=255.0)
+            as usize % 256];
+    }
+}
+```
+
+## !!steps Shift the palette over time
+
+Animating it is just a matter of offsetting the palette index with the time in seconds,
+before remapping the `[-1,1]` value to `[0,255]`.
+
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="Greyscale" />
+
+```rust ! plasma.rs
+for y in 0..self.h {
+    for x in 0..self.w {
+        // position as ratios, in the [0,1] range
+        let fx = x as f32 / (self.w - 1) as f32;
+        let fy = y as f32 / (self.h - 1) as f32;
+
+        // palette index
+        let v = (
+            vec2(fx - 0.5, fy - 0.5)
+            * 16.0
+        )
+        .length()
+        .sin()
+        // !diff +
+        + time;
+
+        // buffer index
+        let i = y * self.w + x;
+        b[i] = self.palette[
+            remap(
+                v,
+                -1.0..=1.0,
+                0.0..=255.0)
+            as usize % 256];
+    }
+}
+```
+
+## !!steps Loop the palette
+
+Cycling through the palette that way shows that it is not continuous: index 255 is white
+and index 0 is black, so every wrap-around is a visible seam. Ramp up then back down over
+the palette range instead.
+
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="GreyscaleLooped"/>
+
+```rust ! palette.rs
+fn col32((r, g, b): (u8, u8, u8)) -> u32 {
+    255 << 24 | (b as u32) << 16 | (g as u32) << 8 | (r as u32)
+}
+
+const PALETTE_SIZE: usize = 256;
+let mut palette: Vec<u32> = vec![0; PALETTE_SIZE];
+
+for i in 0..PALETTE_SIZE {
+    // !diff -
+    let c = i as i32;
+    // !diff(start) +
+    // go from 0 to 1 to 0 over the palette range
+    let c = if i < PALETTE_SIZE / 2 {
+        i as i32 * 2
+    } else {
+        PALETTE_SIZE as i32 - ((i - PALETTE_SIZE / 2) as i32 * 2)
+    };
+    // !diff(end)
+    palette[i] = col32((c as u8, c as u8, c as u8));
+}
+```
+
+## !!steps Time for actual colors
+
+That's better. The same up-then-down ramp now drives an HSL color instead of a grey level:
+the hue lerps from blue to green-yellow, and the lightness follows a squared curve so the
+dark end doesn't crush.
+
+<Run data-sample="Plasma" data-step="ShiftedCircle" data-palette="Colors"/>
+
+```rust ! palette.rs
+fn col32((r, g, b): (u8, u8, u8)) -> u32 {
+    255 << 24 | (b as u32) << 16 | (g as u32) << 8 | (r as u32)
+}
+
+const PALETTE_SIZE: usize = 256;
+let mut palette: Vec<u32> = vec![0; PALETTE_SIZE];
+
+for i in 0..PALETTE_SIZE {
+    let f = i as f32 / PALETTE_SIZE as f32;
+    // go from 0 to 1 to 0 over the palette range
+    let ff = if i < PALETTE_SIZE / 2 {
+        f * 2.0
+    } else {
+        1.0 - ((f - 0.5) * 2.0)
+    };
+
+    // !mark(start)
+    palette[i] = col32(Rgb::from(Hsl::from((
+        // lerp the hue from blue to green-yellow
+        lerp(203.0..=31.0, ff / 2.0),
+        82.0,
+        // lerp the lightness
+        ((ff / 2.0 + 0.5).powi(2) * 100.0).clamp(10.0, 100.0),
+    ))).into());
+    // !mark(end)
+}
+```
+
+## !!steps Move the circle center
+
+Back to `plasma.rs`. The center of the concentric circles doesn't have to stay at
+`(0.5, 0.5)` — driving it with its own pair of sine and cosine breaks the symmetry.
+
+<Run data-sample="Plasma" data-step="Perturbation" data-palette="Colors"/>
+
+```rust ! plasma.rs
+for y in 0..self.h {
+    for x in 0..self.w {
+        // position as ratios, in the [0,1] range
+        let fx = x as f32 / (self.w - 1) as f32;
+        let fy = y as f32 / (self.h - 1) as f32;
+
+        // palette index
+        let v = (
+            // !diff -
+            vec2(fx - 0.5, fy - 0.5)
+            // !diff(start) +
+            vec2(
+                fx - 0.25 - time.sin() * 0.2,
+                fy - 0.3 - time.cos() * 0.3,
+            )
+            // !diff(end)
+            * 16.0
+        )
+        .length()
+        .sin()
+        + time;
+
+        // buffer index
+        let i = y * self.w + x;
+        b[i] = self.palette[
+            remap(
+                v,
+                -1.0..=1.0,
+                0.0..=255.0)
+            as usize % 256];
+    }
+}
+```
+
+## !!steps Swap the sine for domain-warped noise
+
+We now have everything we need: a rendering function akin to a
+[SDF](https://en.wikipedia.org/wiki/Signed_distance_function), animated, and palette
+shifting. It just needs an interesting rendering function — here the
+[bracket-noise crate](https://docs.rs/crate/bracket-noise/latest), fed back into itself.
+Only the index computation and the remap range change; the loop around it is untouched.
+
+<Run data-sample="Plasma" />
+
+```rust ! plasma.rs
+for y in 0..self.h {
+    for x in 0..self.w {
+        // position as ratios, in the [0,1] range
+        let fx = x as f32 / (self.w - 1) as f32;
+        let fy = y as f32 / (self.h - 1) as f32;
+
+        // !focus(start)
+        // warp the noise domain
+        let w = noise.get_noise(
+            fx * 3.0 + (time / 3.0).sin(),
+            fy + (time / 7.0).cos().powi(2));
+
+        // feed the noise to itself
+        let v = noise.get_noise(
+            fx + w + time.cos(),
+            fy + w.powi(3) + (time / 1.7).sin())
+            // palette shifting
+            + time * (fx * fy + 0.1) / 6.0;
+        // !focus(end)
+
+        // buffer index
+        let i = y * self.w + x;
+        b[i] = self.palette[
+            remap(
+                v,
+                // !focus
+                0.0..=0.7,
+                0.0..=255.0)
+            as usize % 256];
+    }
+}
+```
+
+## !!steps Optional: step the palette
+
+One last palette variation, back in `palette.rs`: quantizing the ramp turns the smooth
+gradient into hard bands, which reads much more like the 16-color era.
+
+<Run data-sample="Plasma" data-palette="RainbowStepped"/>
+
+```rust ! palette.rs
+fn col32((r, g, b): (u8, u8, u8)) -> u32 {
+    255 << 24 | (b as u32) << 16 | (g as u32) << 8 | (r as u32)
+}
+
+const PALETTE_SIZE: usize = 256;
+let mut palette: Vec<u32> = vec![0; PALETTE_SIZE];
+
+for i in 0..PALETTE_SIZE {
+    let f = i as f32 / PALETTE_SIZE as f32;
+    // go from 0 to 1 to 0 over the palette range
+    let ff = if i < PALETTE_SIZE / 2 {
+        f * 2.0
+    } else {
+        1.0 - ((f - 0.5) * 2.0)
+    };
+
+    // !callout[/stepped/] Quantizing to 4 levels is what turns the smooth ramp into bands.
+    let stepped = (ff * 4.0).round() / 4.0;
+    palette[i] = col32(Rgb::from(Hsl::from((
+        // lerp the hue from blue to green-yellow
+        lerp(203.0..=31.0, stepped / 2.0),
+        82.0,
+        // lerp the lightness
+        ((stepped / 2.0 + 0.5).powi(2) * 100.0).clamp(10.0, 100.0),
+    ))).into());
+}
+```
+
+</Scrollycoding>
+
+The real bottleneck is the massive amount of `sin/cos` calls. I tried to implement a
+precomputed look-up table for the trigonometry as
+[we used to](https://namoseley.wordpress.com/2015/07/26/sincos-generation-using-table-lookup-and-iterpolation/)
+but Rust's own trig is still twice as fast.
