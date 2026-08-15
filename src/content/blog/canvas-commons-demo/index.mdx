@@ -1,0 +1,21 @@
+---
+title: "Canvas Commons demo"
+author: "theor"
+type: "post"
+pubDate: 2026-08-13T10:00:00.000Z
+description: "Demo post exercising the Canvas Commons integration: a code-driven animation embedded with the canvas player"
+tags: ["astro"]
+draft: true
+---
+
+A test post for the Canvas Commons integration. The animation below is a
+`src/animations/hello.project.ts` project, bundled out-of-process by the integration and
+played by `@canvas-commons/player`. Click it to play.
+
+<Animation src="hello" caption="hello.project.ts - click to play" />
+
+The bundle is only fetched once the animation gets close to the viewport, so a post can
+carry several of them without paying for any it never shows. `eager` opts out of that,
+and `auto` starts playback as soon as the animation is ready:
+
+<Animation src="animations/hello" auto="hover" quality={0.5} caption="Same project, playing on hover at half resolution" />

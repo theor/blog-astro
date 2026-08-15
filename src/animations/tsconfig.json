@@ -1,0 +1,6 @@
+{
+  // Canvas Commons scenes are TSX, but with their own JSX factory - keeping this
+  // scoped to `src/animations` leaves Astro's own JSX handling untouched.
+  "extends": "@canvas-commons/2d/tsconfig.project.json",
+  "include": ["**/*.ts", "**/*.tsx"]
+}
