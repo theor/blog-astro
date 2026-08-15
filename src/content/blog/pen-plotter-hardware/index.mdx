@@ -10,6 +10,9 @@ tags: ["pen plotter"]
 ---
 import { Image } from 'astro:assets';
 
+export const imgw = 300;
+
+
 I built a pen plotter and spent a lot of time fine-tuning it - from tweaking an existing design to designing a tangential knife.
 
 <Video src={import("./banner.mp4")} />
@@ -45,9 +48,29 @@ I stumbled upon Lehaiver's CoreXY frame on thingiverse [here](https://www.thingi
 
 CoreXY kinematics with linear guides on 20mm aluminum extrusions. I ended up redesigning most of the parts in OnShape from scratch, but it's a great starting point. The linear guides are a huge improvement over the linear bearings, and the aluminum extrusions bring a lot of rigidity.
 
+## Feet
+
+- Without feet the frame sits flat on the table: no clearance for the corner brackets, the belt runs or the idlers.
+- Printed L-shaped feet: one leg screwed to the extrusion, one leg flat on the board.
+- Two countersunk holes in the flat leg, so the whole machine is screwed down to an MDF board.
+
+![Feet](./feet.jpg)
+
+![Feet in OnShape](./feet-onshape.png)
+
+{/* TODO fill in:
+- how the vertical leg attaches - slot nut, corner bracket, or the extrusion's end tap?
+- how much lift do they give, and why that height - belt clearance, cable pass-through, something else?
+- what does screwing the frame to a board actually buy - squareness, moving it around, vibration?
+- any levelling adjustment, or is the MDF board the reference surface?
+- how many feet, and did the frame need diagonal bracing once it was off the table?
+*/}
+
 ## Gantry
 
 Lehaiver made a [Laser mount](https://www.thingiverse.com/thing:2685298) with a dove tail plate that I tweaked to fit a pen lift. Belts are easier to tighten on this one.
+
+![Lehaiver's laser mount](./lasermount.jpg)
 
 ![Mount drawing](./mount-drawing.svg)
 
@@ -67,7 +90,7 @@ The Y axis is hit by the moving extrusion.
 ![Limit switch Y Axis](./switch-y.jpg)
 
 Mount using a bracket on the extrusion:
-![Limit switch Y Axis Mount](./switch-extrusion-mount.png)
+<Image width={600} alt="Limit switch Y Axis Mount" src="./switch-extrusion-mount.png" />
 
 There's a third switch on the pen lift.
 
@@ -120,13 +143,74 @@ import lift_stepper_guide_arm from "./lift-stepper-guide-arm.png";
 
 ## Pen holder
 
+- Starting point: the kit's screw pushing the pen against a bracket.
+- Problem: swapping to a pen of a different diameter moves the tip, so every pen change means re-zeroing.
+
+{/* TODO fill in - the thread to pick up is line "it makes any pen change complicated if the two pens don't have the same diameter":
+- what replaced the screw-against-a-bracket? collet, split clamp with a pinch screw, magnetic quick-release, printed adapter sleeves per pen family?
+- how is the tip height set now - does the holder reference the pen tip, the pen body, or is it still set by hand each time?
+- what pen range does it have to swallow (fineliner ~8mm up to a marker ~18mm?) and did one holder cover it or is it a set of adapters?
+- spring-loaded tip or hard down-stop? if sprung: what keeps the line width constant across the sheet?
+- how many revisions before this one, and what failed in the ones before - slipping, tilt, pen dropping on travel moves?
+*/}
 
 # FluidNC controller
 
+- Replaces the Arduino CNC shield of the kit.
+- Two reasons to move: GRBL on an 8-bit MCU was the speed ceiling, and the a4988s were the loudest thing on the machine after the servo.
+
+{/* TODO fill in - the threads to pick up are "GRBL on an old 8-bit MCU is slow", "a4988, which are noisy" and "servo mapped to M3 is a pain in some software":
+- which board? (bare ESP32 + breakout, or one of the FluidNC-ready boards) and why that one
+- which drivers, and how much of the noise actually went away
+- what did the speed/acceleration go from and to - is the machine now limited by the electronics, the frame, or the pen?
+- config-file-instead-of-recompiling: how much did that change the iteration loop, given how many lift designs were tried above
+- the pen lift is a stepper now: is it a real axis in the config, and did that solve the M3/servo mapping annoyance?
+- homing: three switches, what's the homing order and does the lift home first for clearance?
+- WiFi/web UI - actually used day to day, or still sending over USB?
+- anything that was worse than GRBL?
+*/}
+
 ## Case
+
+{/* TODO fill in - nothing written yet, all open:
+- printed or laser cut? mounted on the frame, under the board, or standalone on the desk?
+- what's in it - board, PSU, drivers, fan? any cooling needed?
+- cable management: the gantry has a bowden tube for the drag chain, where do the wires land and are there connectors or is it soldered through?
+- power switch / e-stop
+- what you'd do differently
+*/}
 
 ## Pendant
 
+{/* TODO fill in - nothing written yet, all open:
+- what is it - jog wheel/MPG, macro keypad, a screen? bought or built?
+- what does it actually get used for: jogging to set origin, pen-down height, pausing mid-plot for a pen change?
+- how does it talk to FluidNC - UART, I2C, WiFi, or as a plain USB HID somewhere else?
+- was it worth building versus just using the web UI?
+*/}
+
 #  Tangential Knife
 
+- Picks up the idea abandoned during the belt lift experiment: being able to toggle the down motion on and off.
+- Extra constraint a pen doesn't have: the blade must be steered to face the direction of travel, so it needs a rotary axis.
+
+<Animation src="tangential-knife" auto="hover" caption="Same toolpath, three ways through its corners: a drag knife dragged into line by the material, the same knife told to overshoot and loop back so it arrives already facing the right way, and a tangential knife that stops and turns its rotary axis. Blade offset exaggerated; the compensated one is still cutting when the other two have finished." />
+
+{/* TODO fill in:
+- what it's for - vinyl, card, paper stencils? what couldn't be done with a drag knife?
+- drag knife vs tangential: why the extra rotary axis was worth it
+- the rotary axis: motor, gearing/belt reduction, how the blade is held, how it's zeroed
+- lift and cut depth - is this the same stepper lift as the pen, or its own?
+- toolpath side: who computes the knife angle - post-processor, FluidNC, custom code? corners: lift-and-turn or turn-in-place?
+- where it stands: working, prototype, or shelved?
+*/}
+
 ## Magnetic encoder prototype
+
+{/* TODO fill in - nothing written yet, all open:
+- what problem forced a closed loop on the rotary axis - skipped steps under cutting load, or just no home switch for a continuously rotating shaft?
+- which encoder and how the magnet is mounted on the shaft
+- what reads it and where the loop closes - on the FluidNC board or a separate MCU?
+- measured accuracy vs what the knife actually needs
+- prototype outcome: kept, or replaced by a simpler homing trick?
+*/}
