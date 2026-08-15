@@ -10,6 +10,12 @@ export interface ComponentPaths {
   panel: string;
 }
 
+/** shiki's resolved background/foreground, forwarded to the panel as custom properties. */
+export interface Palette {
+  bg: string;
+  fg: string;
+}
+
 /** MDX element name authors write in their posts. */
 const WRAPPER = "Scrollycoding";
 
@@ -212,7 +218,7 @@ function parseSteps(node: any, file: any): Step[] {
   return steps;
 }
 
-function buildBlock(node: any, steps: Step[]): void {
+function buildBlock(node: any, steps: Step[], palette: Palette): void {
   const count = String(steps.length);
 
   node.name = NAMES.root;
@@ -224,6 +230,8 @@ function buildBlock(node: any, steps: Step[]): void {
       [
         attr("index", String(i)),
         attr("count", count),
+        attr("bg", palette.bg),
+        attr("fg", palette.fg),
         ...(step.codeTitle ? [attr("title", step.codeTitle)] : []),
       ],
       step.code ? [step.code] : [],
@@ -235,7 +243,7 @@ function buildBlock(node: any, steps: Step[]): void {
 /* Plugin                                                                      */
 /* -------------------------------------------------------------------------- */
 
-export function remarkScrollycoding(components: ComponentPaths) {
+export function remarkScrollycoding(components: ComponentPaths, palette: Palette) {
   // Async because annotation parsing goes through @code-hike/lighter, which needs to
   // load a TextMate grammar to know where the language's comments are.
   return async function transform(tree: Root, file: any): Promise<void> {
@@ -279,7 +287,7 @@ export function remarkScrollycoding(components: ComponentPaths) {
       }
     }
 
-    for (const { node, steps } of blocks) buildBlock(node, steps);
+    for (const { node, steps } of blocks) buildBlock(node, steps, palette);
 
     tree.children.push(
       importNode(NAMES.root, components.root) as any,

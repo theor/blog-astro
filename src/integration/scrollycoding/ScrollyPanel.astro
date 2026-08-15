@@ -3,11 +3,17 @@ interface Props {
   index: string | number;
   count: string | number;
   title?: string;
+  /** shiki's resolved theme colors, from the integration - see index.ts resolvePalette. */
+  bg?: string;
+  fg?: string;
 }
 
-const { index, count, title } = Astro.props;
+const { index, count, title, bg, fg } = Astro.props;
 const i = Number(index);
 const n = Number(count);
+
+// Only emitted when resolved, so the stylesheet's own defaults stay in play otherwise.
+const palette = [bg && `--ch-bg:${bg}`, fg && `--ch-fg:${fg}`].filter(Boolean).join(";");
 ---
 
 <div
@@ -15,14 +21,39 @@ const n = Number(count);
   data-scrolly-panel
   data-index={i}
   data-selected={i === 0 ? "true" : "false"}
-  style={`grid-row: 1 / span ${n};`}
+  style={`grid-row: 1 / span ${n};${palette}`}
 >
   {title && <div class="scrolly-panel__name">{title}</div>}
   <slot />
 </div>
 
 <style>
+  /* Everything the panel paints around the code is derived from shiki's own two colors,
+     which arrive as --ch-bg/--ch-fg in the inline style above. The values here are only
+     the fallback for when the theme couldn't be resolved (shiki's nord).
+
+     Only the diff pair is left as fixed hues: red and green carry meaning rather than
+     matching the theme, and they are alpha overlays, so they compose on any background. */
   .scrolly-panel {
+    --ch-bg: #2e3440;
+    --ch-fg: #d8dee9;
+
+    /* Chrome sits just off the code background - enough to read as a separate surface
+       without competing with the code itself. */
+    --ch-chrome: color-mix(in srgb, var(--ch-bg) 86%, var(--ch-fg));
+    --ch-chrome-fg: color-mix(in srgb, var(--ch-fg) 88%, var(--ch-bg));
+    --ch-border: color-mix(in srgb, var(--ch-bg) 62%, var(--ch-fg));
+
+    /* Marks are deliberately neutral rather than a hue of their own: the diff colors are
+       the only thing in the panel that should read as semantic. Override --ch-accent on
+       .scrolly-panel to give them a tint. */
+    --ch-accent: color-mix(in srgb, var(--ch-fg) 65%, var(--ch-bg));
+    --ch-accent-wash: color-mix(in srgb, var(--ch-fg) 13%, transparent);
+    --ch-accent-wash-strong: color-mix(in srgb, var(--ch-fg) 22%, transparent);
+
+    --ch-diff-add: #3fb950;
+    --ch-diff-del: #f85149;
+
     grid-column: 2;
     position: sticky;
     top: var(--scrolly-top, 3rem);
@@ -52,6 +83,14 @@ const n = Number(count);
     user-select: none;
   }
 
+  /* Every panel shares one grid area, so paint order would otherwise be DOM order and a
+     dissolve would layer differently depending on which way the reader is scrolling.
+     Raising the selected one keeps the incoming panel on top either way - see crossfade()
+     in tokenTransitions.ts. */
+  .scrolly-panel[data-selected="true"] {
+    z-index: 1;
+  }
+
   /* Transforms don't apply to non-replaced inline elements, so the syntax tokens have to
      be inline-block for the FLIP to move them. Callouts are excluded: they are not
      tokens, and this selector outranks `.ch-callout { display: block }`, which would
@@ -64,8 +103,8 @@ const n = Number(count);
     font-family: Montserrat, sans-serif;
     font-size: 0.8rem;
     padding: 0.35rem 0.75rem;
-    background: #3b4252;
-    color: #d8dee9;
+    background: var(--ch-chrome);
+    color: var(--ch-chrome-fg);
     border-radius: 4px 4px 0 0;
   }
 
@@ -83,16 +122,16 @@ const n = Number(count);
   .scrolly-panel :global(.line.ch-mark) {
     display: inline-block;
     width: 100%;
-    background: rgba(136, 192, 208, 0.16);
-    box-shadow: inset 3px 0 0 #88c0d0;
+    background: var(--ch-accent-wash);
+    box-shadow: inset 3px 0 0 var(--ch-accent);
   }
 
   /* Inline ranges, from regex queries like `!mark[/home_axis/]`. Marked at whole-token
      granularity, so this highlights the tokens the range touches. */
   .scrolly-panel :global(.ch-mark-inline) {
-    background: rgba(136, 192, 208, 0.28);
+    background: var(--ch-accent-wash-strong);
     border-radius: 3px;
-    box-shadow: 0 0 0 1px rgba(136, 192, 208, 0.5);
+    box-shadow: 0 0 0 1px var(--ch-border);
   }
 
   /* Gutter: line numbers and/or the diff sign, composed server-side into one string so
@@ -118,13 +157,13 @@ const n = Number(count);
   }
 
   .scrolly-panel :global(.line.ch-diff-add) {
-    background: rgba(63, 185, 80, 0.16);
-    box-shadow: inset 3px 0 0 #3fb950;
+    background: color-mix(in srgb, var(--ch-diff-add) 16%, transparent);
+    box-shadow: inset 3px 0 0 var(--ch-diff-add);
   }
 
   .scrolly-panel :global(.line.ch-diff-del) {
-    background: rgba(248, 81, 73, 0.16);
-    box-shadow: inset 3px 0 0 #f85149;
+    background: color-mix(in srgb, var(--ch-diff-del) 16%, transparent);
+    box-shadow: inset 3px 0 0 var(--ch-diff-del);
   }
 
   /* Code mentions: hovering a mention in the prose dims every line it doesn't name. */
@@ -153,10 +192,10 @@ const n = Number(count);
     width: fit-content;
     margin: 0.5em 0 0.25em;
     padding: 0.15em 0.7em;
-    border: 1px solid #4c566a;
+    border: 1px solid var(--ch-border);
     border-radius: 4px;
-    background: #3b4252;
-    color: #e5e9f0;
+    background: var(--ch-chrome);
+    color: var(--ch-chrome-fg);
     white-space: break-spaces;
     user-select: none;
     -webkit-user-select: none;
@@ -167,9 +206,9 @@ const n = Number(count);
     top: -1px;
     width: 8px;
     height: 8px;
-    border-left: 1px solid #4c566a;
-    border-top: 1px solid #4c566a;
-    background: #3b4252;
+    border-left: 1px solid var(--ch-border);
+    border-top: 1px solid var(--ch-border);
+    background: var(--ch-chrome);
     transform: rotate(45deg) translateY(-50%);
   }
 
