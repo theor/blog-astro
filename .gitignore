@@ -1,5 +1,9 @@
 # build output
 dist/
+# canvas commons bundles, rebuilt from src/**/*.project.ts by the integration
+public/_canvas/
+# video rendered out of the canvas commons editor
+output/
 # generated types
 .astro/
 

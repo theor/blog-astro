@@ -9,6 +9,7 @@ import rehypeSlug from 'rehype-slug';
 import sitemap from "@astrojs/sitemap";
 import {myAstro} from './src/integration';
 import {scrollycoding} from './src/integration/scrollycoding';
+import {canvasCommons} from './src/integration/canvascommons';
 
 /** @type {import('astro-m2dx').Options} */
 const m2dxOptions = {
@@ -40,7 +41,7 @@ export default defineConfig({
     assetsInclude: ["**/*.m4v", "**/*.webm", "**/*.bin"],
   },
   site: "https://theor.xyz",
-  integrations: [myAstro(), scrollycoding(), mdx(), sitemap(), icon()],
+  integrations: [myAstro(), scrollycoding(), canvasCommons(), mdx(), sitemap(), icon()],
   markdown: {
     remarkPlugins: [[m2dx, m2dxOptions]],
     rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],

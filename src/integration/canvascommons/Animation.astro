@@ -1,0 +1,136 @@
+---
+import { animations, type AnimationEntry } from "virtual:canvas-commons/animations";
+
+interface Props {
+  /**
+   * Either the full id - the project's path under `src/`, without `.project.ts(x)` - or
+   * just its file name when that is unambiguous. `src/animations/hello.project.ts` is
+   * both `animations/hello` and `hello`.
+   */
+  src: string;
+  /** Rendering resolution. Defaults to the project's own, from its `.meta`. */
+  width?: number;
+  height?: number;
+  /** Resolution scale, e.g. `0.5` to render at half size and upscale. */
+  quality?: number;
+  /** `true` plays on load, `"hover"` plays while the pointer is over the animation. */
+  auto?: boolean | "hover";
+  /** Passed to the project's `useScene().variables`. */
+  variables?: Record<string, unknown>;
+  /** Skips the wait for the animation to scroll into view. */
+  eager?: boolean;
+  caption?: string;
+  class?: string;
+}
+
+const { src, width, height, quality, auto, variables, eager, caption, class: className } = Astro.props;
+
+function resolve(id: string): AnimationEntry {
+  const matches = animations.filter((a) => a.id === id);
+  if (matches.length === 0) {
+    // Fall back to the file name, which is what most posts will want to write.
+    matches.push(...animations.filter((a) => a.id.split("/").pop() === id));
+  }
+  if (matches.length === 1) return matches[0];
+
+  const known = animations.map((a) => a.id).join(", ") || "none found under src/";
+  throw new Error(
+    matches.length === 0
+      ? `<Animation src="${id}"> - no such animation. Available: ${known}`
+      : `<Animation src="${id}"> is ambiguous: ${matches.map((a) => a.id).join(", ")}`,
+  );
+}
+
+const animation = resolve(src);
+
+// The canvas fills the element's width, so the box has to carry the shape of the
+// animation itself - otherwise the page reflows the moment the player upgrades.
+const ratio = `${width ?? animation.width} / ${height ?? animation.height}`;
+
+// The player reads `auto` with `!!getAttribute("auto")`, so an empty string is *off*.
+const autoAttr = auto === true ? "true" : auto || undefined;
+
+// Not rendered as attributes: the player crashes if they arrive before a project has
+// loaded. player.client.ts applies them once it has - see whenSettled().
+const settings = Object.fromEntries(
+  Object.entries({ width, height, quality }).filter(([, v]) => v !== undefined),
+);
+---
+
+<figure class:list={["cc-animation", className]}>
+  <canvas-commons-player
+    data-src={animation.url}
+    data-eager={eager ? "" : undefined}
+    data-settings={Object.keys(settings).length > 0 ? JSON.stringify(settings) : undefined}
+    auto={autoAttr}
+    variables={variables && JSON.stringify(variables)}
+    style={`aspect-ratio: ${ratio}`}
+  ></canvas-commons-player>
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<script>
+  import { initCanvasCommons } from "./player.client";
+  initCanvasCommons();
+</script>
+
+<style>
+  .cc-animation {
+    margin: var(--spacing-8, 2rem) 0;
+  }
+
+  canvas-commons-player {
+    /* Also the placeholder: the element is an unknown inline tag until the runtime is
+       loaded, and stays empty until it is scrolled into view. */
+    display: block;
+    position: relative;
+    width: 100%;
+    background: #14161c;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  /* Until the runtime defines the element there is nothing inside it but the background,
+     which is indistinguishable from an animation that failed. These say which it is: a
+     waiting box looks deliberate, a broken one says so.
+
+     Hung on the figure rather than the player: once the element upgrades it becomes a
+     shadow host, and a shadow host's ::before/::after are light-tree children, so they
+     stop rendering entirely. The figure keeps its own box either way. */
+  .cc-animation {
+    position: relative;
+  }
+
+  .cc-animation:has(canvas-commons-player:not(:defined))::after,
+  .cc-animation:has(canvas-commons-player[data-error])::after {
+    content: "▶";
+    position: absolute;
+    inset: 0 0 auto 0;
+    aspect-ratio: inherit;
+    display: grid;
+    place-content: center;
+    color: #ffffff8a;
+    font-size: 3rem;
+    pointer-events: none;
+  }
+
+  .cc-animation:has(canvas-commons-player[data-error])::after {
+    content: "This animation could not be loaded — see the browser console.";
+    font-size: 0.9rem;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  /* The player's own shadow DOM exposes these; without it the play button sits on an
+     overlay that never quite matches the page. */
+  canvas-commons-player::part(overlay) {
+    background-color: rgb(0 0 0 / 0.3);
+  }
+
+  figcaption {
+    font-size: 0.875em;
+    opacity: 0.75;
+    text-align: center;
+    margin-top: 0.5em;
+  }
+</style>

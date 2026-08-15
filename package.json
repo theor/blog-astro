@@ -9,6 +9,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "canvas": "vite --config src/integration/canvascommons/editor.vite.config.ts",
     "plop": "plop"
   },
   "dependencies": {
@@ -16,6 +17,10 @@
     "@astrojs/mdx": "^6",
     "@astrojs/rss": "^4",
     "@astrojs/sitemap": "^3",
+    "@canvas-commons/2d": "^0.3.1",
+    "@canvas-commons/core": "^0.3.1",
+    "@canvas-commons/player": "^0.3.1",
+    "@canvas-commons/vite-plugin": "^0.3.1",
     "@code-hike/lighter": "1.0.1",
     "@iconify-json/mdi": "^1",
     "@jsdevtools/rehype-toc": "^3.0.2",
@@ -32,6 +37,7 @@
     "tweakpane": "^3.1.10"
   },
   "devDependencies": {
+    "@canvas-commons/editor": "^0.3.1",
     "plop": "^3.1.2",
     "prettier": "^2.8.4",
     "prettier-plugin-astro": "^0.14",
