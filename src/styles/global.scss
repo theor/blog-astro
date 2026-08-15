@@ -116,6 +116,9 @@ pre {
   > code {
     all: unset;
   }
+  &.astro-code {
+    border-radius: 4px;
+  }
 }
 blockquote {
   border: solid black #999;
