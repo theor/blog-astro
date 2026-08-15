@@ -24,10 +24,23 @@ export const MIN_TRANSITION_BUDGET = 180;
 const config = {
   moveDuration: 0.28,
   addDuration: 0.22,
+  fadeDuration: 0.3,
 };
 
 /** Above this many token pairs, skip matching and just fade - the LCS is O(n*m). */
 const MAX_DIFF_CELLS = 250_000;
+
+/**
+ * Minimum share of visible characters two blocks must have in common before their tokens
+ * are treated as the same code moving. Below it they are different code that happens to
+ * be in the same panel - another file, or another part of the same one - and get a plain
+ * dissolve instead.
+ *
+ * Measured over every consecutive pair in the demo post and the plasma article: unrelated
+ * pairs score 0.05-0.11, genuine edits 0.41-1.00. Nothing lands between, so the exact
+ * value is not delicate; this sits ~2x clear of the top of the first band.
+ */
+const RELATED_THRESHOLD = 0.25;
 
 interface Snapshot {
   x: number;
@@ -109,6 +122,50 @@ function matchTokens(a: (string | null)[], b: (string | null)[]): Array<[number,
   return pairs;
 }
 
+const inkLength = (text: string | null) => (text ?? "").replace(/\s/g, "").length;
+
+/**
+ * How much of the larger block the two have in common, as a fraction of visible
+ * characters along the LCS.
+ *
+ * Weighted by characters rather than by token count on purpose: indentation runs, `let `,
+ * `;` and `}` match between any two files of the same language, and counting them equally
+ * with real identifiers pulls unrelated pairs up near genuine edits. On the same sample,
+ * scoring by token count narrows the gap between the two bands from 4x to 2x.
+ */
+function similarity(
+  from: (string | null)[],
+  to: (string | null)[],
+  pairs: Array<[number, number]>,
+): number {
+  const sum = (list: (string | null)[]) => list.reduce((n, text) => n + inkLength(text), 0);
+  const total = Math.max(sum(from), sum(to));
+  if (total === 0) return 1;
+  return pairs.reduce((n, [fromIndex]) => n + inkLength(from[fromIndex]), 0) / total;
+}
+
+/**
+ * Dissolve one panel into the other, for when there is no shared code to carry the eye.
+ *
+ * Only the incoming panel actually fades. Fading both would cross a point where neither
+ * is opaque and the page shows through the pair - with the standard ease pair that dip
+ * bottoms out around 10%, which reads as a flicker. Instead the outgoing panel is *held*
+ * at full opacity underneath while the incoming one, raised above it by the
+ * [data-selected] z-index in ScrollyPanel.astro, comes up over it. `fill: none` then drops
+ * it back to the stylesheet's opacity:0 the instant the animation ends, by which point the
+ * panel on top covers it completely.
+ *
+ * This works because every panel is opaque and equalizeHeights has pinned them to a common
+ * height, so the one above fully covers the one below.
+ */
+function crossfade(from: HTMLElement, to: HTMLElement, budget: number): Animation[] {
+  const duration = config.fadeDuration * budget;
+  return [
+    from.animate({ opacity: [1, 1] }, { duration, fill: "none" }),
+    to.animate({ opacity: [0, 1] }, { duration, easing: "ease-in-out", fill: "both" }),
+  ];
+}
+
 /**
  * Bin flips into runs of added and moved tokens. Consecutive tokens moving the same
  * direction are grouped so they can be staggered together; backwards-moving runs go
@@ -179,14 +236,23 @@ export function transitionTokens(
   to: HTMLElement,
   budget: number = MAX_TRANSITION_BUDGET,
 ): Animation[] {
-  const fromSnapshots = tokensOf(from).map(toSnapshot);
+  const fromElements = tokensOf(from);
   const toElements = tokensOf(to);
-  const toSnapshots = toElements.map(toSnapshot);
 
-  const pairs = matchTokens(
-    fromSnapshots.map((s) => s.content),
-    toSnapshots.map((s) => s.content),
-  );
+  // Contents first: matching is decided on text alone, and the unrelated case can then
+  // skip snapshotting entirely - it is the getComputedStyle in toSnapshot that costs.
+  const fromContent = fromElements.map((el) => el.textContent);
+  const toContent = toElements.map((el) => el.textContent);
+  const pairs = matchTokens(fromContent, toContent);
+
+  // `matchTokens` also returns [] for oversized blocks, so those land here too - the plain
+  // fade MAX_DIFF_CELLS was always meant to fall back to.
+  if (similarity(fromContent, toContent, pairs) < RELATED_THRESHOLD) {
+    return crossfade(from, to, budget);
+  }
+
+  const fromSnapshots = fromElements.map(toSnapshot);
+  const toSnapshots = toElements.map(toSnapshot);
 
   const firstOf = new Map<number, Snapshot>();
   for (const [oldIndex, newIndex] of pairs) firstOf.set(newIndex, fromSnapshots[oldIndex]);
