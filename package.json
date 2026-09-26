@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@astro-community/astro-embed-youtube": "^0.5.10",
-    "@astrojs/mdx": "^6",
+    "@astrojs/markdown-remark": "^7",
+    "@astrojs/mdx": "^7",
     "@astrojs/rss": "^4",
     "@astrojs/sitemap": "^3",
     "@canvas-commons/2d": "^0.3.1",
@@ -26,7 +27,7 @@
     "@jsdevtools/rehype-toc": "^3.0.2",
     "@tweakpane/core": "^1.1.9",
     "@tweakpane/plugin-essentials": "^0.1.8",
-    "astro": "^6",
+    "astro": "^7",
     "astro-icon": "^1",
     "astro-m2dx": "^0.7.16",
     "fontsource-merriweather": "^4.0.0",

@@ -219,10 +219,8 @@ export function canvasCommons(options: CanvasCommonsOptions = {}): AstroIntegrat
           logLevel: "warn",
           // Vite's own public-dir copying would duplicate `public/` into `public/_canvas/`.
           publicDir: false,
-          // Vite 7 transforms TSX with esbuild, which the plugin doesn't configure (it
-          // only sets the rolldown/oxc equivalent). Scoped to this build, so Astro's JSX
-          // is untouched.
-          esbuild: { jsx: "automatic", jsxImportSource: "@canvas-commons/2d" },
+          // Vite 8 transforms TSX with oxc, and the plugin sets `oxc.jsx.importSource`
+          // itself, so the JSX factory no longer has to be configured here.
           plugins: [
             canvasCommonsPlugin({
               project: relToCwd,

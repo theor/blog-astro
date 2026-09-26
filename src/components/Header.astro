@@ -24,13 +24,16 @@ import { Icon } from "astro-icon/components";
       </h1>
     </a>
     <span>{SITE_DESCRIPTION}</span>
+    <!-- The links are inline-block with no margin, so the space between them is the
+         only thing separating them. Astro 7's `compressHTML: 'jsx'` default strips
+         template whitespace, so the separators have to be explicit. -->
     <nav>
-      <HeaderLink href="/">Home</HeaderLink>
-      <HeaderLink href="/about">About</HeaderLink>
+      <HeaderLink href="/">Home</HeaderLink>{" "}
+      <HeaderLink href="/about">About</HeaderLink>{" "}
       <!-- <HeaderLink href="https://twitter.com/astrodotbuild" target="_blank">Twitter</HeaderLink> -->
       <HeaderLink href="https://github.com/theor" target="_blank">
         GitHub
-      </HeaderLink>
+      </HeaderLink>{" "}
       <HeaderLink href="/rss.xml">
         <Icon name="mdi:rss" />
       </HeaderLink>

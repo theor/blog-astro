@@ -1,4 +1,5 @@
 import { defineConfig } from "astro/config";
+import { unified } from "@astrojs/markdown-remark";
 import mdx from "@astrojs/mdx";
 import m2dx from "astro-m2dx";
 import icon from "astro-icon";
@@ -43,8 +44,13 @@ export default defineConfig({
   site: "https://theor.xyz",
   integrations: [myAstro(), scrollycoding(), canvasCommons(), mdx(), sitemap(), icon()],
   markdown: {
-    remarkPlugins: [[m2dx, m2dxOptions]],
-    rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],
+    // Sätteri is v7's default processor, but it has no remark/rehype stage: m2dx,
+    // autoAbstract and remarkScrollycoding are all MDAST plugins. Staying on unified()
+    // keeps them - and the .mdx files inherit this processor from `markdown`.
+    processor: unified({
+      remarkPlugins: [[m2dx, m2dxOptions]],
+      rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],
+    }),
     shikiConfig: {
       // Choose from Shiki's built-in themes (or add your own)
       // https://github.com/shikijs/shiki/blob/main/docs/themes.md

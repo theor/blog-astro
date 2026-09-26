@@ -1,6 +1,13 @@
 const load = async function () {
   let images: Record<string, () => Promise<unknown>> | undefined = undefined;
-  images = import.meta.glob(["./content/blog/**/**.*", "!**.mdx", "!**.md_", "!**.wasm"]);
+  // Vite 8 only honours negations written as full glob patterns: the older `!**.mdx`
+  // form no longer excludes anything, which pulls `.md_` drafts into the bundle as JS.
+  images = import.meta.glob([
+    "./content/blog/**/*.*",
+    "!**/*.mdx",
+    "!**/*.md_",
+    "!**/*.wasm",
+  ]);
   // console.log("all", images);
 
   return images;

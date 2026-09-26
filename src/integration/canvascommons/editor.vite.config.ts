@@ -11,7 +11,7 @@ import { defineConfig } from "vite";
  * integration reads back for the animation's resolution.
  */
 export default defineConfig({
-  // Vite 7 still transforms TSX with esbuild; the plugin only configures the oxc side.
-  esbuild: { jsx: "automatic", jsxImportSource: "@canvas-commons/2d" },
+  // Vite 8 transforms TSX with oxc, which is the side the plugin configures itself
+  // (`oxc.jsx.importSource`), so the JSX factory needs no help here anymore.
   plugins: [canvasCommons({ project: ["src/**/*.project.ts", "src/**/*.project.tsx"] })],
 });
