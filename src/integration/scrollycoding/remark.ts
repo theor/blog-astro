@@ -244,8 +244,8 @@ function buildBlock(node: any, steps: Step[], palette: Palette): void {
 /* -------------------------------------------------------------------------- */
 
 export function remarkScrollycoding(components: ComponentPaths, palette: Palette) {
-  // Async because annotation parsing goes through @code-hike/lighter, which needs to
-  // load a TextMate grammar to know where the language's comments are.
+  // Async because annotation parsing tokenizes with shiki, which may need to load the
+  // language's TextMate grammar to know where its comments are.
   return async function transform(tree: Root, file: any): Promise<void> {
     const blocks: Array<{ node: any; steps: Step[] }> = [];
 

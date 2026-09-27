@@ -174,7 +174,7 @@ export function markTransformer(): CodeTransformer {
     /**
      * Inline ranges, from regex queries like `// !mark[/home_axis/]`.
      *
-     * lighter reports 1-based inclusive columns; shiki gives a 0-based `col` for the
+     * annotations.ts reports 1-based inclusive columns; shiki gives a 0-based `col` for the
      * token start. Marking is whole-token: a token that merely overlaps the range gets
      * marked rather than being split, which keeps this inside the stock shiki pipeline.
      */

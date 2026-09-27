@@ -22,7 +22,6 @@
     "@canvas-commons/core": "^0.3.1",
     "@canvas-commons/player": "^0.3.1",
     "@canvas-commons/vite-plugin": "^0.3.1",
-    "@code-hike/lighter": "1.0.1",
     "@iconify-json/mdi": "^1",
     "@jsdevtools/rehype-toc": "^3.0.2",
     "@tweakpane/core": "^1.1.9",

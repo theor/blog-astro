@@ -4,6 +4,7 @@ import type { AstroIntegration } from "astro";
 // runner, which is already closed by the time an async hook awaits a dynamic import.
 import { createHighlighter } from "shiki";
 
+import { setAnnotationLanguages } from "./annotations";
 import { markTransformer } from "./markTransformer";
 import { remarkScrollycoding, type ComponentPaths, type Palette } from "./remark";
 
@@ -73,6 +74,9 @@ export function scrollycoding(): AstroIntegration {
         };
 
         const palette = await resolvePalette(config.markdown?.shikiConfig as any);
+        // Annotations are found with a highlighter of their own; it needs the blog's custom
+        // languages as much as Astro's does.
+        setAnnotationLanguages(config.markdown?.shikiConfig?.langs as any);
 
         updateConfig({
           markdown: {
