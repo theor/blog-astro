@@ -1,0 +1,313 @@
+---
+title: "Moirai: a language for procedural history of worlds"
+author: "theor"
+type: "post"
+pubDate: 2026-09-26T13:43:22.478Z
+description: ""
+tags: ["procedural"]
+banner: "code_ui.png"
+# banner: "records-scroll.gif"
+# banner: "records-scroll2.mp4"
+---
+
+I love procedural generation, and I wanted to generate a world _history_ like Dwarf Fortress does: a timeline of facts, people, events. I ended up with a custom language, Moirai, because every problem is a compiler/interpreter if I try hard enough to solve it.
+
+![Code and result sample](./code_ui.png)
+
+# What's history ? A sample
+
+> A chronological record of significant events (such as those affecting a nation or institution) often including an explanation of their causes
+> (Merriam-Webster)
+
+Moirai is a language to describe entities and events happening to them, a runtime to execute the language, a UI to explore the data, and a VS Code LSP.
+
+# The language
+
+The language has a taste of ECMAScript with a sprinkle of rust and F# in my opinion.
+
+<Scrollycoding>
+## !!steps Entities
+
+Let's start with artifacts. First we need to define the entity, with its properties.
+
+```moirai ! sample.moi
+entity Artifact {
+    // all entities have an implicit name
+    // prop name: string
+    prop date_created: number
+}
+```
+
+## !!steps Events
+
+Then we can declare an event, that will happen randomly every 15 years. The UI will already show records
+![First items](./blog-1.png)
+
+```moirai ! sample.moi
+entity Artifact {
+    // all entities have an implicit name
+    // prop name: string
+    prop date_created: number
+}
+
+@frequency(1, Frequency.PerXYear, 15)
+event artifact_created() {
+    // the parameter is the name, using string interpolation.
+    create Artifact $a: 'A{random(1000)}'
+    set $a.date_created = #Time.year
+    // records are the prose shown in the UI
+    record('Artifact {$a.name} has been created')
+}
+```
+## !!steps Random tables
+The names are boring ; let's add a couple of tables, which can be used to picked random values like you would when playing a TTRPG.
+![Name interpolation](./blog-2.png)
+Who doesn't want a Keychain of Destiny ?
+
+```moirai ! sample.moi
+entity Artifact {
+    prop date_created: number
+}
+
+    // !focus(1:2)
+table NamePrefix { 'Sword', 'Spear', 'Boots', 
+                   'Keychain', 'Grimoire'}
+table NameSuffix { 'Destiny', 'Doom', 'Solace', 'Joy'}
+
+@frequency(1, Frequency.PerXYear, 15)
+event artifact_created() {
+    // !focus(1:1)
+    create Artifact $a: '{roll(NamePrefix)} of {roll(NameSuffix)}'
+    set $a.date_created = #Time.year
+    record('Artifact {$a.name} has been created')
+}
+
+```
+
+## !!steps Links between entities
+
+Items need an owner, so let's add people.
+
+```moirai ! sample.moi
+entity Artifact {
+    prop date_created: number
+    prop owner: Person
+}
+// !focus(1:3)
+entity Person {
+    prop birth_date: number
+}
+
+table NamePrefix { 'Sword', 'Spear', 'Boots', 
+                   'Keychain', 'Grimoire'}
+table NameSuffix { 'Destiny', 'Doom', 'Solace', 'Joy'}
+
+@frequency(1, Frequency.PerXYear, 15)
+event artifact_created() {
+// !focus(1:1)
+    pick Person $p
+    create Artifact $a: '{roll(NamePrefix)} of {roll(NameSuffix)}'
+    // Time is an always present entity. #Time is the syntax to access a singleton
+    set $a.date_created = #Time.year
+    
+// !focus(1:2)
+    set $a.owner = $p
+    record('Artifact {$a.name} has been created. {$p} owns it.')
+}
+
+```
+
+## !!steps Creating people
+
+Because no person exists and the `pick` call is unconditional, the event will exit early. `pick`s can be made conditional by putting them in an `if`: `if(pick Person $p) { ... }`
+
+Let's create a few people at startup, using the @start attribute on an event:
+
+``` moirai ! sample.moi
+entity Artifact {
+    prop date_created: number
+    prop owner: Person
+}
+entity Person {
+    prop birth_date: number
+}
+
+table NamePrefix { 'Sword', 'Spear', 'Boots', 
+                   'Keychain', 'Grimoire'}
+table NameSuffix { 'Destiny', 'Doom', 'Solace', 'Joy'}
+
+@frequency(1, Frequency.PerXYear, 15)
+event artifact_created() {
+    pick Person $p
+    create Artifact $a: '{roll(NamePrefix)} of {roll(NameSuffix)}'
+    // Time is an always present entity. #Time is the syntax to access a singleton
+    set $a.date_created = #Time.year
+    
+    set $a.owner = $p
+    record('Artifact {$a.name} has been created. {$p} owns it.')
+}
+
+table Names { 'Arwen', 'Brenna', 'Chandra', 'Dorian', 'Evangelique'}
+table Surnames { 'Ambervale', 'Brackenridge', 'Corvane', 'Darkmoor', 'Emberlane'}
+
+function create_person(){
+    create Person $p: ('{roll(Names)} {roll(Surnames)}')
+    record('{$p.name} is born')
+}
+
+@start
+event populate_world() {
+    // repeat a function call
+    call(create_person, 10)
+}
+```
+
+## !!steps Display queries
+We can add a `display` attribute to show the result of specific queries in the UI, here all items owned by someone:
+
+```moirai ! sample.moi
+entity Artifact {
+    prop date_created: number
+// !focus
+    prop owner: Person
+}
+// !focus
+@display(Artifact, 'Artifacts owned',owner = $self)
+entity Person { ... }
+```
+![Name interpolation](./blog-items.png)
+
+## !!steps On created trigger
+
+In addition to events, which happen randomly, you can also declare triggers, which react to changes.
+We can refactor the birth record as a trigger run when a `Person` is created, and also set a flag `alive` to `true`:
+
+![On Created Trigger](./blog-trigger-birth.png)
+
+```moirai ! sample.moi
+entity Person {
+    prop birth_date: number
+    // !focus
+    prop alive: bool
+}
+
+function create_person(){
+    //!focus
+    create Person $p: ('{roll(Names)} {roll(Surnames)}')
+}
+
+@start
+event populate_world() {
+    call(create_person, 10)
+            // !diff -
+    record('{$p.name} is born')
+}
+
+            // !diff(start) +
+// !focus(1:6)
+trigger birth {
+    when_created Person
+    set $new.birth_date = #Time.year
+    set $new.alive = true
+    record('{$new.name} is born')
+}
+            // !diff(end)
+
+```
+
+## !!steps On change trigger
+
+Similarly, a trigger can react to a property change. A new event causes random persons to die ; a trigger reacts to `alive = false` and records the death.
+
+![On Changed Trigger](./blog-trigger-death.png)
+
+```moirai ! sample.moi
+entity Person {
+    prop birth_date: number
+    prop alive: bool
+}
+
+function create_person(){
+    create Person $p: ('{roll(Names)} {roll(Surnames)}')
+}
+
+@start
+event populate_world() {
+    call(create_person, 10)
+    record('{$p.name} is born')
+}
+
+trigger birth {
+    when_created Person
+    set $new.birth_date = #Time.year
+    set $new.alive = true
+    record('{$new.name} is born')
+}
+@frequency(1, Frequency.PerXYear, 50)
+event random_death() {
+    pick Person $p (alive)
+    set $p.alive = false
+}
+
+            // !diff(start) +
+trigger death {
+    when Person and alive = false
+    record ('{$new.name} leaves this world')
+}
+            // !diff(end)
+```
+
+## !!steps A trigger to give the deceased items away
+
+Building on the previous example, when a person dies, we can iterate on its owned items to give them to someone else.
+
+![Items being given on death of the owner](./blog-trigger-items.png)
+
+```moirai ! sample.moi
+entity Person {
+    prop birth_date: number
+    prop alive: bool
+}
+
+function create_person(){
+    create Person $p: ('{roll(Names)} {roll(Surnames)}')
+}
+
+@start
+event populate_world() {
+    call(create_person, 10)
+    record('{$p.name} is born')
+}
+
+trigger birth {
+    when_created Person
+    set $new.birth_date = #Time.year
+    set $new.alive = true
+    record('{$new.name} is born')
+}
+@frequency(1, Frequency.PerXYear, 50)
+event random_death() {
+    pick Person $p (alive)
+    set $p.alive = false
+}
+
+trigger death {
+    when Person and alive = false
+    record ('{$new.name} leaves this world')
+// !diff(start) +
+    each Artifact $i: (owner = $new) {
+        pick Person $other: $other != $new
+        set $i.owner = $other
+        record('The {$i.name} is given to {$other.name}')
+    }
+// !diff(end)
+}
+```
+
+</Scrollycoding>
+
+# Interface
+
+# Implementation and language server
+
+
