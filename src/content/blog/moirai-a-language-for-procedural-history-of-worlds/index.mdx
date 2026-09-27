@@ -5,6 +5,7 @@ type: "post"
 pubDate: 2026-09-26T13:43:22.478Z
 description: ""
 tags: ["procedural"]
+accent: "#6d3fc8"
 banner: "code_ui.png"
 # banner: "records-scroll.gif"
 # banner: "records-scroll2.mp4"
@@ -12,7 +13,11 @@ banner: "code_ui.png"
 
 I love procedural generation, and I wanted to generate a world _history_ like Dwarf Fortress does: a timeline of facts, people, events. I ended up with Moirai, a procedural narrative and world-simulation engine driven by a custom language, because every problem is a compiler/interpreter if I try hard enough to solve it.
 
+<Wide>
+
 ![Code and result sample](./code_ui.png)
+
+</Wide>
 
 # What's history ? A sample
 
@@ -330,11 +335,13 @@ event wedding {
 
 ## !!steps First problems
 
-> 032: Evangelique Emberlane and Evangelique Emberlane get married
+<Records>
+`032` **Evangelique Emberlane** and **Evangelique Emberlane** get married
 
-> 945: Brenna Brackenridge and Chandra Ambervale get married
+`945` **Brenna Brackenridge** and **Chandra Ambervale** get married
 
-> 945: Brenna Brackenridge and Dorian Ambervale get married
+`945` **Brenna Brackenridge** and **Dorian Ambervale** get married
+</Records>
 
 By failing to define marriage properly, I first encountered narcissicm (people marrying themselves, `$x == $y`) and group mariage (`partner != null`. Accepted in some cultures, not the one I was modeling). We can add a couple of checks for that.
 
@@ -349,9 +356,11 @@ event wedding {
 ```
 
 ## !!steps Not the time for necromancy
-> 948: Chandra Ambervale dies in an accident
+<Records>
+`948` **Chandra Ambervale** dies in an accident
 
-> 950: Brenna Brackenridge and Chandra Ambervale get married
+`950` **Brenna Brackenridge** and **Chandra Ambervale** get married
+</Records>
 
 Maybe we need people to be alive to get married.
 
@@ -367,9 +376,11 @@ event wedding {
 ```
 
 ## !!steps Age check
-> 948: Chandra Ambervale is born
+<Records>
+`948` **Chandra Ambervale** is born
 
-> 958: Brenna Brackenridge and Chandra Ambervale get married
+`958` **Brenna Brackenridge** and **Chandra Ambervale** get married
+</Records>
 
 Yuck.
 
@@ -386,10 +397,11 @@ event wedding {
 
 ## !!steps What's a tree anyway ?
 
-> 745: Chandra Ambervale has a child, Brenna Brackenridge
+<Records>
+`745` **Chandra Ambervale** has a child, **Brenna Brackenridge**
 
-> 775: Chandra Ambervale and Brenna Brackenridge get married
-
+`775` **Chandra Ambervale** and **Brenna Brackenridge** get married
+</Records>
 I first added a `$y != $x.parent1 and $y != $x.parent2`, then `$x.parent1 != $y.parent1 ...`, then wondered: what are the formal definitions of consanguinity, both legally and in terms of graph theory ?
 
 The common name for this metric is "degree of kinship". In terms of graphs, it's the shortest path from one vertex (individual) to another. In civil-law, the Roman way of counting kinship is used: find an ancestor they share, count the generations from each individual to their shared ancestor, sum that.
@@ -525,7 +537,6 @@ Changesets make the ledger of the database. Running an event opens a changeset, 
 Triggers are run automatically _in reaction to_ created or changed entities. They expose two variables: `$old` if it's a change, `$new` in both cases. The `when` clause at the beginning is used to early exit irrelevant triggers  
 
 ```moirai
-
 trigger inherit {
     when Person and alive = false and $old.alive
     // ...

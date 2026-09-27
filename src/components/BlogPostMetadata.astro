@@ -16,6 +16,11 @@ const { post } = Astro.props;
         display: flex;
         flex-wrap: wrap;
         margin-bottom: var(--spacing-2);
+        align-items: center;
+        font-family: Montserrat, sans-serif;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
         * {
             color: var(--color-text-light);
         }
@@ -25,8 +30,10 @@ const { post } = Astro.props;
 
         .tag {
             margin-right: var(--spacing-2);
-                    margin-right: var(--spacing-1);
-                }
+            color: var(--color-primary);
+            font-weight: 600;
+            text-decoration: none;
+        }
     }
 </style>
 <div class="metadata">

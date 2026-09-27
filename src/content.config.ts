@@ -29,6 +29,8 @@ const blog = defineCollection({
     serie_part: z.number().optional(),
     toc: z.boolean().optional(),
     preview: z.boolean().optional(),
+    // Overrides --color-primary for this post (heading bars, links, tags).
+    accent: z.string().optional(),
   }),
 });
 

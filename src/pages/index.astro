@@ -52,9 +52,15 @@ let posts = await Promise.all(
                 }
                 margin-bottom: var(--spacing-8);
                 h1 {
-                    margin: unset;
-                }
-                a {
+                    margin: 0 0 var(--spacing-2);
+                    font-size: 1.75rem;
+                    a {
+                        color: var(--color-heading);
+                        text-decoration: none;
+                        &:hover {
+                            color: var(--color-primary);
+                        }
+                    }
                 }
                 img {
                     width: 100%;

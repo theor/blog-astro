@@ -1,0 +1,51 @@
+---
+// A log of generated records, styled after the Moirai UI. One paragraph per record:
+//   `945` **Brenna Brackenridge** and **Chandra Ambervale** get married
+// The leading inline code is the year; bold text is an entity chip.
+---
+
+<div class="records">
+  <slot />
+</div>
+
+<style>
+  .records {
+    font-family: Montserrat, sans-serif;
+    font-size: 0.9rem;
+    margin: 0 0 var(--spacing-8);
+    padding: var(--spacing-2) 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+  }
+
+  /* Hanging indent: the year sits in the gutter, wrapped text lines up after it. */
+  .records :global(p) {
+    position: relative;
+    margin: 0;
+    padding: var(--spacing-2) var(--spacing-4) var(--spacing-2) 4rem;
+    line-height: 1.9;
+  }
+
+  .records :global(p + p) {
+    border-top: 1px solid #f0f1f3;
+  }
+
+  .records :global(p > code:first-child) {
+    all: unset;
+    position: absolute;
+    left: 0;
+    width: 3rem;
+    text-align: right;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-light);
+  }
+
+  .records :global(strong) {
+    font-weight: 500;
+    padding: 0.1em 0.45em;
+    border-radius: 3px;
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 12%, white);
+  }
+</style>

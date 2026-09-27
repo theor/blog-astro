@@ -4,6 +4,9 @@
   License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
  */
 @import "../../node_modules/fontsource-montserrat/index.css";
+@import "../../node_modules/fontsource-montserrat/600.css";
+@import "../../node_modules/fontsource-montserrat/700.css";
+@import "../../node_modules/fontsource-montserrat/800.css";
 @import "../../node_modules/fontsource-merriweather/index.css";
 :root {
   --color-primary: #005b99;
@@ -43,31 +46,58 @@ body {
   word-wrap: break-word;
   overflow-wrap: break-word;
   line-height: 1.5;
-  color: #444;
+  color: #333;
+  // Merriweather defaults to old-style figures, which look uneven in technical text.
+  font-variant-numeric: lining-nums;
 }
-h1 {
+h1, h2, h3, h4, h5, h6 {
   font-family: Montserrat, sans-serif;
-  color: #222;
+  color: var(--color-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
 }
-h2 {
-  font-family: Montserrat, sans-serif;
-  color: #222;
-}
-h3 {
-  font-family: Montserrat, sans-serif;
-  color: #222;
-}
-h4 {
-  font-family: Montserrat, sans-serif;
-  color: #222;
-}
-h5 {
-  font-family: Montserrat, sans-serif;
-  color: #222;
-}
-h6 {
-  font-family: Montserrat, sans-serif;
-  color: #222;
+// Section headings. Posts use either `#` or `##` for sections, so a top-level
+// h1 in an article (other than the post title) is styled like an h2.
+article {
+  > h1:not(.title), > h2, > h3, > h4 {
+    margin: 2.2em 0 0.6em;
+  }
+  > h1:not(.title), > h2 {
+    font-size: 1.6rem;
+    &::before {
+      content: "";
+      display: block;
+      width: 2.5rem;
+      height: 4px;
+      margin-bottom: 0.7rem;
+      border-radius: 2px;
+      background: var(--color-primary);
+    }
+  }
+  > h3 {
+    font-size: 1.25rem;
+  }
+  > h4 {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  // When h1 is the section level, shift h2/h3 down one step.
+  &:has(> h1:not(.title)) {
+    > h2 {
+      font-size: 1.25rem;
+      &::before {
+        display: none;
+      }
+    }
+    > h3 {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+  }
 }
 strong {
   color: #222;
@@ -76,7 +106,9 @@ b {
   color: #222;
 }
 a {
-  color: #3273dc;
+  color: var(--color-primary);
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 1px;
 }
 nav {
   a {
@@ -120,15 +152,62 @@ pre {
     border-radius: 4px;
   }
 }
+// Language tab on standalone code blocks; scrollycoding panels have their own file name bar.
+pre.astro-code[data-language]::before {
+  content: attr(data-language);
+  display: block;
+  margin: -1rem -1rem 0.75rem;
+  padding: 0.3rem 1rem;
+  font-family: Montserrat, sans-serif;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px 4px 0 0;
+}
+pre.astro-code[data-language="csharp"]::before { content: "C#"; }
+pre.astro-code[data-language="fsharp"]::before { content: "F#"; }
+pre.astro-code[data-language="moirai"]::before { content: "Moirai"; }
+pre.astro-code[data-language="plaintext"]::before,
+pre.astro-code[data-language="text"]::before {
+  display: none;
+}
+.scrolly-panel .scrolly-panel__name + pre.astro-code[data-language]::before {
+  display: none;
+}
+// Screenshots are mostly white UI on a white page: give them an edge.
+article figure img,
+article p > img {
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 6px 20px -8px rgba(0, 0, 0, 0.18);
+}
+// Breaks out of the text column, like the scrollycoding blocks do.
+.wide {
+  --wide-max: 60rem;
+  --wide-gutter: 1rem;
+  width: min(var(--wide-max), calc(100vw - 2 * var(--wide-gutter)));
+  margin-inline: calc(50% - min(calc(var(--wide-max) / 2), calc(50vw - var(--wide-gutter))));
+  figure {
+    margin-inline: 0;
+  }
+  img {
+    width: 100%;
+  }
+}
 blockquote {
-  border: solid black #999;
+  border-left: 4px solid var(--color-accent);
   color: #222;
-  padding: 2px 0px 2px 20px;
+  padding: 2px 0px 2px 1.25rem;
   margin: 0px;
   font-style: italic;
+  p:last-child {
+    margin-bottom: 0;
+  }
 }
 p {
-  line-height: var(--lineHeight-relaxed);
+  line-height: 1.7;
+  text-wrap: pretty;
   --baseline-multiplier: 0.179;
   --x-height-multiplier: 0.35;
   margin: var(--spacing-0) var(--spacing-0) var(--spacing-8) var(--spacing-0);
@@ -180,23 +259,31 @@ a[data-link] {
 }
 
 .toc {
-  #table-of-content {
-    padding-left: 30px;
-    margin-bottom: 0.5rem;
-  }
   font-family: Montserrat, sans-serif;
-  border-left: solid 8px var(--color-accent);
+  border-left: solid 3px var(--color-accent);
+  padding: var(--spacing-1) 0;
+  #table-of-content {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-light);
+    margin: 0 0 var(--spacing-2);
+    padding-left: var(--spacing-5);
+  }
   & > ol {
     margin-top: 0px;
   }
   ol {
-  list-style-type: none;
-  padding-inline-start: 30px;
+    list-style-type: none;
+    padding-inline-start: var(--spacing-5);
   }
-  // background-color: var(--color-accent);
   a {
-    color: var(--color-text);
+    color: #333;
+    font-size: 0.95rem;
     text-decoration: none;
+    &:hover {
+      color: var(--color-primary);
+    }
   }
 }
 

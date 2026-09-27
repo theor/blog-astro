@@ -33,10 +33,25 @@ properties: {"data-link":true}
 /** @type {import('@jsdevtools/rehype-toc').Options} */
 const tocOptions = {
   customizeTOC: e => {
+    // Top-level sections only: drop the nested lists under each item.
+    for (const ol of e.children)
+      for (const li of ol.children ?? [])
+        li.children = li.children.filter(c => c.tagName !== "ol");
     e.children = [ {type:'element', tagName: "h1", children: [ {type: "text",
     value: "Table of content"}] }, ...e.children];
     return e;
   }
+};
+
+/** rehype-toc inserts the TOC first; move it down to just before the first heading so
+ * the intro (and hero image) is what a reader sees first. */
+const rehypeTocAfterIntro = () => tree => {
+  const isToc = n => n.tagName === "nav" && n.properties?.className?.includes("toc");
+  const tocIndex = tree.children.findIndex(isToc);
+  if (tocIndex === -1) return;
+  const [nav] = tree.children.splice(tocIndex, 1);
+  const firstHeading = tree.children.findIndex(n => /^h[1-6]$/.test(n.tagName ?? ""));
+  tree.children.splice(firstHeading === -1 ? tocIndex : firstHeading, 0, nav);
 };
 // https://astro.build/config
 export default defineConfig({
@@ -51,7 +66,7 @@ export default defineConfig({
     // keeps them - and the .mdx files inherit this processor from `markdown`.
     processor: unified({
       remarkPlugins: [[m2dx, m2dxOptions]],
-      rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions]],
+      rehypePlugins: [rehypeSlug, [rehypeAutolinkHeadings, headingsOptions], [toc, tocOptions], rehypeTocAfterIntro],
     }),
     shikiConfig: {
       // Choose from Shiki's built-in themes (or add your own)
