@@ -10,7 +10,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "canvas": "vite --config src/integration/canvascommons/editor.vite.config.ts",
-    "plop": "plop"
+    "plop": "plop",
+    "sync:moirai": "node scripts/sync-moirai-grammar.mjs"
   },
   "dependencies": {
     "@astro-community/astro-embed-youtube": "^0.5.10",

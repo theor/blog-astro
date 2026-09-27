@@ -11,6 +11,8 @@ import sitemap from "@astrojs/sitemap";
 import {myAstro} from './src/integration';
 import {scrollycoding} from './src/integration/scrollycoding';
 import {canvasCommons} from './src/integration/canvascommons';
+// The Moirai DSL's grammar, copied from the Moirai repo by `yarn sync:moirai`.
+import moiraiGrammar from './src/langs/moirai.tmLanguage.json' with { type: 'json' };
 
 /** @type {import('astro-m2dx').Options} */
 const m2dxOptions = {
@@ -58,7 +60,7 @@ export default defineConfig({
       // Add custom languages
       // Note: Shiki has countless langs built-in, including .astro!
       // https://github.com/shikijs/shiki/blob/main/docs/languages.md
-      langs: [],
+      langs: [{ ...moiraiGrammar, aliases: ['sg', 'moi'] }],
       // Enable word wrap to prevent horizontal scrolling
       wrap: true,
     },
