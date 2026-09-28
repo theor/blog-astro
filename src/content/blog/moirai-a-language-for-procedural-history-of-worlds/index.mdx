@@ -1,9 +1,9 @@
 ---
-title: "Moirai: a language for procedural history of worlds"
+title: "Moirai: a language for procedurally generating world histories"
 author: "theor"
 type: "post"
 pubDate: 2026-09-26T13:43:22.478Z
-description: ""
+description: "Moirai is a small language, runtime and UI for simulating the history of a procedural world: entities, random events, triggers and the chronicle they write."
 tags: ["procedural"]
 accent: "#6d3fc8"
 banner: "code_ui.png"
@@ -19,7 +19,7 @@ I love procedural generation, and I wanted to generate a world _history_ like Dw
 
 </Wide>
 
-# What's history? A sample
+# What is Moirai?
 
 > A chronological record of significant events (such as those affecting a nation or institution) often including an explanation of their causes
 > (Merriam-Webster)
@@ -62,7 +62,7 @@ entity Artifact {
     prop date_created: number
 }
 
-@frequency(1, Frequency.PerXYear, 15)
+@frequency(1, PerXYear, 15)
 event artifact_created() {
     // the parameter is the name, using string interpolation.
     create Artifact $a: 'A{random(1000)}'
@@ -86,7 +86,7 @@ table NamePrefix { 'Sword', 'Spear', 'Boots',
                    'Keychain', 'Grimoire'}
 table NameSuffix { 'Destiny', 'Doom', 'Solace', 'Joy'}
 
-@frequency(1, Frequency.PerXYear, 15)
+@frequency(1, PerXYear, 15)
 event artifact_created() {
     // !focus(1:1)
     create Artifact $a: '{roll(NamePrefix)} of {roll(NameSuffix)}'
@@ -114,7 +114,7 @@ table NamePrefix { 'Sword', 'Spear', 'Boots',
                    'Keychain', 'Grimoire'}
 table NameSuffix { 'Destiny', 'Doom', 'Solace', 'Joy'}
 
-@frequency(1, Frequency.PerXYear, 15)
+@frequency(1, PerXYear, 15)
 event artifact_created() {
 // !focus(1:1)
     pick Person $p
@@ -124,7 +124,7 @@ event artifact_created() {
     
 // !focus(1:2)
     set $a.owner = $p
-    record('Artifact {$a.name} has been created. {$p} owns it.')
+    record('Artifact {$a.name} has been created. {$p.name} owns it.')
 }
 
 ```
@@ -148,7 +148,7 @@ table NamePrefix { 'Sword', 'Spear', 'Boots',
                    'Keychain', 'Grimoire'}
 table NameSuffix { 'Destiny', 'Doom', 'Solace', 'Joy'}
 
-@frequency(1, Frequency.PerXYear, 15)
+@frequency(1, PerXYear, 15)
 event artifact_created() {
     pick Person $p
     create Artifact $a: '{roll(NamePrefix)} of {roll(NameSuffix)}'
@@ -156,7 +156,7 @@ event artifact_created() {
     set $a.date_created = #Time.year
     
     set $a.owner = $p
-    record('Artifact {$a.name} has been created. {$p} owns it.')
+    record('Artifact {$a.name} has been created. {$p.name} owns it.')
 }
 
 table Names { 'Arwen', 'Brenna', 'Chandra', 'Dorian', 'Evangelique'}
@@ -204,15 +204,14 @@ entity Person {
 }
 
 function create_person(){
-    //!focus
     create Person $p: ('{roll(Names)} {roll(Surnames)}')
+            // !diff -
+    record('{$p.name} is born')
 }
 
 @start
 event populate_world() {
     call(create_person, 10)
-            // !diff -
-    record('{$p.name} is born')
 }
 
             // !diff(start) +
@@ -246,7 +245,6 @@ function create_person(){
 @start
 event populate_world() {
     call(create_person, 10)
-    record('{$p.name} is born')
 }
 
 trigger birth {
@@ -255,16 +253,16 @@ trigger birth {
     set $new.alive = true
     record('{$new.name} is born')
 }
-@frequency(1, Frequency.PerXYear, 50)
+@frequency(1, PerXYear, 50)
 event random_death() {
-    pick Person $p (alive)
+    pick Person $p: (alive)
     set $p.alive = false
 }
 
             // !diff(start) +
 trigger death {
     when Person and alive = false
-    record ('{$new.name} leaves this world')
+    record('{$new.name} leaves this world')
 }
             // !diff(end)
 ```
@@ -288,7 +286,6 @@ function create_person(){
 @start
 event populate_world() {
     call(create_person, 10)
-    record('{$p.name} is born')
 }
 
 trigger birth {
@@ -297,15 +294,15 @@ trigger birth {
     set $new.alive = true
     record('{$new.name} is born')
 }
-@frequency(1, Frequency.PerXYear, 50)
+@frequency(1, PerXYear, 50)
 event random_death() {
-    pick Person $p (alive)
+    pick Person $p: (alive)
     set $p.alive = false
 }
 
 trigger death {
     when Person and alive = false
-    record ('{$new.name} leaves this world')
+    record('{$new.name} leaves this world')
 // !diff(start) +
     each Artifact $i: (owner = $new) {
         pick Person $other: $other != $new
@@ -331,7 +328,7 @@ event wedding {
     pick Person $y
     set $x.partner = $y
     set $y.partner = $x
-    record '{$x.name} and {$y.name} get married'
+    record('{$x.name} and {$y.name} get married')
 }
 ```
 
@@ -353,7 +350,7 @@ event wedding {
     pick Person $y: ($y != $x and partner = null)
     set $x.partner = $y
     set $y.partner = $x
-    record '{$x.name} and {$y.name} get married'
+    record('{$x.name} and {$y.name} get married')
 }
 ```
 
@@ -364,7 +361,7 @@ event wedding {
 `950` **Brenna Brackenridge** and **Chandra Ambervale** get married
 </Records>
 
-Maybe we need people to be alive to get married.
+Maybe we need people to be alive to get married. (Astute readers will have noticed the item inheritance trigger above has the same bug: nothing stops `$other` from being dead.)
 
 
 ```moirai !
@@ -373,7 +370,7 @@ event wedding {
     pick Person $y: ($y != $x and alive and partner = null)
     set $x.partner = $y
     set $y.partner = $x
-    record '{$x.name} and {$y.name} get married'
+    record('{$x.name} and {$y.name} get married')
 }
 ```
 
@@ -393,7 +390,7 @@ event wedding {
     pick Person $y: ($y != $x and alive and partner = null and age > Age.Child)
     set $x.partner = $y
     set $y.partner = $x
-    record '{$x.name} and {$y.name} get married'
+    record('{$x.name} and {$y.name} get married')
 }
 ```
 
@@ -406,9 +403,9 @@ event wedding {
 </Records>
 I first added a `$y != $x.parent1 and $y != $x.parent2`, then `$x.parent1 != $y.parent1 ...`, then wondered: what are the formal definitions of consanguinity, both legally and in terms of graph theory?
 
-The common name for this metric is "degree of kinship". In terms of graphs, it's the shortest path from one vertex (individual) to another. In civil law, the Roman method of counting kinship is used: find the closest common ancestor, count the generations from each individual up to that ancestor, and sum both counts.
+The common name for this metric is "degree of kinship". In terms of graphs, if individuals are vertices and parent-child relationships are edges, it's the length of the shortest path between two vertices going through a common ancestor. In civil law, the Roman method of counting kinship is used: find the closest common ancestor, count the generations from each individual up to that ancestor, and sum both counts.
 
-I added a built-in function for that:
+I added a built-in function for that. With the Roman count, a parent is at degree 1, a sibling or grandparent at 2, an aunt or uncle at 3, a first cousin at 4, so `related($x, $y, 6)` rules out everyone up to second cousins:
 ```moirai
 related($a, $b, n)  ⇔  there is a common ancestor X with
                         depth(a → X) + depth(b → X) ≤ n
@@ -420,7 +417,7 @@ event wedding {
     pick Person $y: ($y != $x and alive and partner = null and age > Age.Child and not(related($x, $y, 6)))
     set $x.partner = $y
     set $y.partner = $x
-    record '{$x.name} and {$y.name} get married'
+    record('{$x.name} and {$y.name} get married')
 }
 ```
 </Scrollycoding>
@@ -560,11 +557,8 @@ entity Person {
 }
 @frequency(1, EveryXYear, 1)
 event people_grow {
-    each Person $p: (alive = true, age = Age.Child, (birthdate + 20) <= #Time.year){
+    each Person $p: (alive and age = Age.Child and (birthdate + 20) <= #Time.year) {
         set $p.age = Age.Young
-    }
-    each Person $p: (alive = true, age = Age.Young, (birthdate + 40) <= #Time.year){
-        set $p.age = Age.Adult
         random_weighted 25 {
             5 => set $p.job = Job.Smith
             10 => set $p.job = Job.Merchant
@@ -572,18 +566,20 @@ event people_grow {
             // ...
         }
     }
+    each Person $p: (alive and age = Age.Young and (birthdate + 40) <= #Time.year) {
+        set $p.age = Age.Adult
+    }
     // ...
 }
 ```
 It means that every year, we query every person at least once. This is one of the reasons I indexed boolean properties. It could be refactored to iterate over every person only once, or to run once every 5 or 10 years if aging doesn't have to be exact.
 
-I then realized this would work better event-driven instead of polled, by scheduling effects:
+I then realized this would work better event-driven instead of polled. A person's age transitions are known the instant they're born, so each one can be scheduled at its exact future year, instead of re-scanning the whole population every year. Inside a `schedule` block, `$self` is the entity it was scheduled on, and `if $self.alive` skips anyone who died before the transition came due:
 
 ```moirai
 trigger born {
     when_created Person
     set $new.birthdate = #Time.year
-    // A person's age transitions are known the instant they're born, so schedule each one to fire at its exact future year instead of re-scanning the whole population every year. This replaces the old children_grow / youngs_grow / adults_grow events (each was an `each Person` poll). $self is the person; `if $self.alive` skips anyone who died before the transition came due.
     schedule($new, $new.birthdate + 20) {
         if $self.alive {
             set $self.age = Age.Young
@@ -608,13 +604,11 @@ Engine tests use stories written inline or fixture files.
 
 # Profiling and performance
 
-A simulated year allocates only storage. Everything the world keeps grows in chunks: `ChunkedList<T>` (1024 items per chunk) and `Slab<T>` (~64 KB arrays). Strings can live in a `Slab<char>`. BytesPerYear measures this: the median year of the `w.sg` test world allocates 0 bytes.
+Once the world is warmed up, simulating a year doesn't allocate anything besides the storage the world keeps growing. That storage grows in chunks: `ChunkedList<T>` (1024 items per chunk) and `Slab<T>` (~64 KB arrays), and strings can live in a `Slab<char>`. The `BytesPerYear` test tracks this: the median year of `w.sg`, my main test world (stories use either the `.sg` or `.moi` extension), allocates 0 bytes. 1000 years of it allocate 17.8 MB in total, with about 6 ms of GC pause and 21 MB still live afterwards.
 
-1000 years of w.sg allocate 17.8 MB, with about 6 ms of GC pause and 21 MB live afterwards.
+To find what's slow, the `--profile` flag prints a table after each simulation pass, with a row per event and per trigger: invocations, hit rate, self and inclusive time, and allocated KB.
 
-Profiler: `--profile` prints a table per event and per trigger for each pass. It shows invocations, hit %, self and inclusive time, and allocated KB.
-
-Rule coverage counters are always on. The Rules page uses them to flag rules that never ran and rules that never completed.
+Rule coverage counters are always on, profiler or not. The Rules page of the UI uses them to flag rules that never ran and rules that never completed, which usually means a `pick` that never matches.
 
 # Parsing and LSP
 
@@ -630,22 +624,38 @@ There is a separate parsing entry point for the LSP server, which keeps referenc
 # Hosts
 
 The main UI is a Svelte SPA, which can either hit an ASP.NET Core API exposing an engine instance or a WASM build of the engine.
-It shows the record and changeset feeds, can filter by entity, show an entity's properties and history, do DB queries, show a family tree, and more.
+It shows the record and changeset feeds, can filter by entity, show an entity's properties and history, run DB queries, draw a family tree, and more.
 
-![web-records](./web-records.png)
-![web-properties](./web-properties.png)
-![web-family](./web-family.png)
-![web-world](./web-world.png)
-![web-rules](./web-rules.png)
+The records feed, filterable by tag:
 
-The WASM build has an embedded story editor for demo purposes:
+![Records feed](./web-records.png)
 
-![web-story](./web-story.png)
+Selecting an entity shows its properties next to its own history:
+
+![Entity properties and history](./web-properties.png)
+
+The family tree:
+
+![Family tree](./web-family.png)
+
+World statistics, replayed from the changeset log:
+
+![World statistics](./web-world.png)
+
+Rule coverage, to spot events and triggers that never fire:
+
+![Rule coverage](./web-rules.png)
+
+The WASM build also embeds a story editor for demo purposes:
+
+![Story editor](./web-story.png)
 
 I should get around to writing a Unity host...
 
 # Conclusion
 
-I hope this was a fun read. I don't know if this will ever be useful to someone else, but I will definitely use it next time I run a TTRPG. Until then!
+I hope this was a fun read. I don't know if this will ever be useful to someone else, but I will definitely use it next time I run a TTRPG.
+
+Next on the list: the Unity host, maybe a bytecode interpreter if queries ever stop being the bottleneck, and a lot more rules, because a world only gets interesting once enough of them start interacting. If you try the [WASM build](https://theor.github.io/Moirai/) and write a story of your own, I'd love to see what comes out of it. Until then!
 
 
