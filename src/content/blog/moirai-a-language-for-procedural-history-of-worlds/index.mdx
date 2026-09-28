@@ -24,16 +24,18 @@ I love procedural generation, and I wanted to generate a world _history_ like Dw
 > A chronological record of significant events (such as those affecting a nation or institution) often including an explanation of their causes
 > (Merriam-Webster)
 
-Moirai is a language to describe entities and events happening to them, a runtime to execute the language, a UI to explore the data, and a VS Code LSP.
- If you want to give a try to the WASM build, it's hosted as a github pages site: [theor.github.io/Moirai/](https://theor.github.io/Moirai/).
+Moirai is a language to describe entities and events happening to them, a runtime to execute the language, a UI to explore the data, and a VS Code LSP, written in C# with minimal dependencies. It can run as a Svelte frontend using an asp.net core api or a WASM build, and I intend to test it in Unity too.
+
+If you want to give a try to the WASM build, it's hosted as a github pages site: [theor.github.io/Moirai/](https://theor.github.io/Moirai/) and the repo with desktop releases is here: [github.com/theor/Moirai](https://github.com/theor/Moirai).
 
 ![Site](./site.png)
 
 
-
 # The language
 
-The language has a taste of ECMAScript with a sprinkle of rust and F# in my opinion.
+The language is a mix of rust, C# and F# - with room for improvement, as the history of the project shows through the syntax.
+
+## A sample world
 
 <Scrollycoding>
 ## !!steps Entities
@@ -480,17 +482,17 @@ I initially used SQLite - fantastic piece of software, but given the comparative
 {/* ```sql
 -- 
 CREATE TABLE "entity" (
-	"default__id"	INTEGER,
-	"default__type"	INTEGER NOT NULL,
-	"default__name"	TEXT,
-	"Time__year"	INTEGER DEFAULT 0,
-	"Person__age"	INTEGER DEFAULT 0,
-	"Person__first_name"	TEXT,
-	"Person__alive"	INTEGER DEFAULT 0,
-	"Person__birthdate"	INTEGER DEFAULT 0,
-	"Item__maker"	INTEGER DEFAULT 0,
-	"Item__item_type"	INTEGER DEFAULT 0,
-	PRIMARY KEY("default__id")
+    "default__id"	INTEGER,
+    "default__type"	INTEGER NOT NULL,
+    "default__name"	TEXT,
+    "Time__year"	INTEGER DEFAULT 0,
+    "Person__age"	INTEGER DEFAULT 0,
+    "Person__first_name"	TEXT,
+    "Person__alive"	INTEGER DEFAULT 0,
+    "Person__birthdate"	INTEGER DEFAULT 0,
+    "Item__maker"	INTEGER DEFAULT 0,
+    "Item__item_type"	INTEGER DEFAULT 0,
+    PRIMARY KEY("default__id")
 );
 ``` */}
 
@@ -598,32 +600,52 @@ trigger born {
 
 # Testing
 
-- NUnit suites: engine and DSL behaviour, snapshot goldens (tokens, printed Database, 50-year record history), one fixture per grammar rule, error recovery, trigger gating, query narrowing, nested calls, and allocation benchmarks.
-- Re-blessing goldens: UPDATE_GOLDENS=1 dotnet test.
-- Story sources: Stories.Wsg is only for tests about w.sg itself. Engine tests use stories written inline or fixtures from TestProject1/Stories/.
+On top of standard arrange-act-assert tests, the parser also pretty-prints the parsed code and ensures the parsing-printing is idempotent.
+
+Engine tests use stories written inline or fixture files.
+
+![Tests](./tests.png)
 
 # Profiling and performance
 
-- A simulated year allocates only storage. Everything the world keeps grows in chunks: ChunkedList\<T\> (1024 items per chunk) and Slab\<T\> (~64 KB arrays). Strings can live in a Slab\<char\>. BytesPerYear measures this: the median year of w.sg allocates 0 bytes.
-- 1000 years of w.sg allocate 17.8 MB, with about 6 ms of GC pause and 21 MB live afterwards.
-- Profiler: --profile prints a table per event and per trigger for each pass. It shows invocations, hit %, self and inclusive time, and allocated KB.
-- Rule coverage counters are always on. The Rules page uses them to flag rules that never ran and rules that never completed.
+A simulated year allocates only storage. Everything the world keeps grows in chunks: `ChunkedList\<T\>` (1024 items per chunk) and `Slab\<T\>` (~64 KB arrays). Strings can live in a `Slab\<char\>`. BytesPerYear measures this: the median year of the `w.sg` test world allocates 0 bytes.
 
-# Parsing
+1000 years of w.sg allocate 17.8 MB, with about 6 ms of GC pause and 21 MB live afterwards.
 
-Parser (Moirai.Parser/)
+Profiler: --profile prints a table per event and per trigger for each pass. It shows invocations, hit %, self and inclusive time, and allocated KB.
 
-- It is hand-written: a character-by-character tokenizer with a mode stack for string interpolation, plus Superpower combinators. There is no ANTLR and no code generation.
-- StoryParser.Parse splits the token stream at top-level definitions and parses each chunk separately. One broken definition does not blank out the rest of the file.
-- ParseForTooling also returns tokens, the AST and the linker, for the LSP.
+Rule coverage counters are always on. The Rules page uses them to flag rules that never ran and rules that never completed.
+
+# Parsing and LSP
+
+The parser lives in a different DLL - the plan was to allow ahead-of-time parsing to some serializable format that could be run by the engine dll, but I never got there.
+
+I initiallly used ANTLR. Its grammar is great, but the build pipeline is not my favorite, especially when you need java in the mix. I then migrated to [Superpowers](https://github.com/datalust/superpower), a really nice C# parser combinator library.
+
+There is a separate entry point to parse for the LSP server, which keeps references to the source tokens in the parsed AST. That way, the LSP can locate error squiggles and symbol definitions correctly.
+
+![LSP1](./lsp1.png)
+![LSP2](./lsp2.png)
 
 # Hosts
 
-- WorldSession is the one implementation of the client API: reset, pass years, feed, queries, biography, family tree, chronicle, cause and story editing. It is deliberately not thread-safe; locking is each host's job.
-- Server: a SignalR hub that guards one static world with a single semaphore.
-- WASM: runs on the page's main thread and breaks passes into adaptive chunks of about 50 ms so the UI stays responsive. The trimmed bundle is about 3.5 MB (1.1 MB brotli).
-- Cross-host determinism: seed 42 plus 120 years of w.sg gives the same counts on .NET and on WASM.
+The main UI is a Svelte SPA, which can either hit an ASP.net core API exposing an engine instance or a WASM build of the engine.
+It shows the record and changeset feeds, can filter by entities, show one entity properties and history, do DB queries, show a family tree, and more.
 
-# Language server
+![web-records](./web-records.png)
+![web-properties](./web-properties.png)
+![web-family](./web-family.png)
+![web-world](./web-world.png)
+![web-rules](./web-rules.png)
+
+The WASM build has an embedded story editor for demo purposes:
+
+![web-story](./web-story.png)
+
+I should get on writing a Unity host...
+
+# Conclusion
+
+I hope this was a fun read. I don't know if this will ever be useful to someone else, but I definitely will use it next time I run a TTRPG. Until then !
 
 
