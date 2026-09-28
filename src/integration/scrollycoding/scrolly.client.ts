@@ -17,8 +17,28 @@ const TRIGGER = 0.5; // fraction of the viewport height
 const prefersReducedMotion = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+const LAYOUT_KEY = "scrolly-layout";
+const LAYOUT_EVENT = "scrolly:layout";
+
+/** Readers can opt out of side-by-side; the inline script in Scrollycoding.astro applies
+ *  the saved choice before first paint, so this only reads the attribute back. */
+const prefersStacked = () => document.documentElement.dataset.scrollyLayout === "stacked";
+
 /** The narrow layout shows every panel inline, so there is no selection to serve. */
-const isNarrowLayout = () => window.matchMedia("(max-width: 60rem)").matches;
+const isNarrowLayout = () =>
+  prefersStacked() || window.matchMedia("(max-width: 60rem)").matches;
+
+function setStacked(stacked: boolean) {
+  const root = document.documentElement;
+  if (stacked) root.dataset.scrollyLayout = "stacked";
+  else delete root.dataset.scrollyLayout;
+  try {
+    if (stacked) localStorage.setItem(LAYOUT_KEY, "stacked");
+    else localStorage.removeItem(LAYOUT_KEY);
+  } catch {}
+  // Every block on the page switches together, not just the one whose button was used.
+  document.dispatchEvent(new Event(LAYOUT_EVENT));
+}
 
 /**
  * Pin every code block to the height of the tallest one. All panels overlap in a single
@@ -179,6 +199,33 @@ function setup(root: HTMLElement) {
   window.addEventListener("resize", () => {
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(refresh);
+  });
+
+  const toggle = root.querySelector<HTMLButtonElement>("[data-scrolly-layout-toggle]");
+  const syncToggle = () => {
+    if (!toggle) return;
+    const stacked = prefersStacked();
+    toggle.textContent = stacked ? "Show code side by side" : "Show code inline";
+    toggle.setAttribute("aria-pressed", String(stacked));
+  };
+  if (toggle) {
+    toggle.hidden = false;
+    syncToggle();
+    toggle.addEventListener("click", () => {
+      // Keep the button under the pointer: the block's height changes a lot either way,
+      // and without this the reader lands somewhere unrelated.
+      const before = toggle.getBoundingClientRect().top;
+      setStacked(!prefersStacked());
+      window.scrollBy(0, toggle.getBoundingClientRect().top - before);
+    });
+  }
+
+  document.addEventListener(LAYOUT_EVENT, () => {
+    // A half-finished token FLIP would be left frozen mid-move in the stacked layout.
+    for (const animation of inFlight) animation.cancel();
+    inFlight = [];
+    syncToggle();
+    refresh();
   });
 
   steps.forEach((step, index) => {
