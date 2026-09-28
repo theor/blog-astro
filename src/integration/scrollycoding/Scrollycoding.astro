@@ -9,25 +9,35 @@
 
 <style>
   .scrolly {
-    --scrolly-max: 72rem;
-    --scrolly-gutter: 1rem;
+    --scrolly-extend: 24rem;
+    --scrolly-gutter: 3rem;
     --scrolly-top: 3rem;
+    --scrolly-pad: 2.5rem;
+    --scrolly-band: #f5f4f8;
 
-    /* Break out of `body { max-width: 75ch; margin: auto }` without ever using 100vw,
-       which would overflow by the scrollbar width. */
-    width: min(var(--scrolly-max), calc(100vw - 2 * var(--scrolly-gutter)));
-    margin-inline: calc(50% - min(calc(var(--scrolly-max) / 2), calc(50vw - var(--scrolly-gutter))));
+    /* Anchored to the text column's left edge so the reading line doesn't jump on the
+       way in or out; only the code column grows into the right margin. (100vw - 100%) / 2
+       is that margin, since body is centered - the gutter covers the scrollbar width. */
+    width: calc(100% + max(0px, min(var(--scrolly-extend), (100vw - 100%) / 2 - var(--scrolly-gutter))));
     margin-block: var(--spacing-8, 2rem);
 
+    /* A full-bleed band marks the block as its own section. box-shadow + clip-path paint
+       past the edges without adding to the scrollable width. */
+    padding-top: var(--scrolly-pad);
+    padding-bottom: calc(var(--scrolly-pad) + var(--scrolly-tail, 0px));
+    background: var(--scrolly-band);
+    box-shadow: 0 0 0 100vmax var(--scrolly-band);
+    clip-path: inset(0 -100vmax);
+
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0 var(--spacing-8, 2rem);
     align-items: start;
 
-    /* No tail spacer here on purpose. The last step needs room below it to reach the
+    /* No fixed tail spacer on purpose. The last step needs room below it to reach the
        trigger line at mid-viewport, but how much is missing depends on what follows the
        block on the page - often nothing is needed at all. scrolly.client.ts measures the
-       shortfall and sets padding-bottom to exactly that. With JS off there is no scroll
+       shortfall and sets --scrolly-tail to exactly that. With JS off there is no scroll
        selection to serve, so zero is right. */
   }
 
@@ -35,7 +45,6 @@
     .scrolly {
       display: block;
       width: auto;
-      margin-inline: 0;
     }
   }
 </style>

@@ -47,10 +47,11 @@ function equalizeHeights(panels: HTMLElement[]) {
  * The last step can only be selected if the page can scroll far enough for it to reach
  * the trigger line, which needs `(1 - TRIGGER) * vh` of document below its top. Whatever
  * follows the block already counts towards that - trailing prose, another block, the
- * footer - so only add the shortfall rather than a blanket 60vh of dead space.
+ * footer, the block's own base padding - so only add the shortfall rather than a
+ * blanket 60vh of dead space.
  */
 function updateTailSpacer(root: HTMLElement, steps: HTMLElement[], vh: number) {
-  root.style.paddingBottom = "0px";
+  root.style.setProperty("--scrolly-tail", "0px");
   if (isNarrowLayout() || vh < 8) return;
 
   const lastStep = steps[steps.length - 1];
@@ -59,7 +60,7 @@ function updateTailSpacer(root: HTMLElement, steps: HTMLElement[], vh: number) {
   const needed = (1 - TRIGGER) * vh + 8; // 8px covers the trigger band and rounding
 
   const shortfall = Math.max(0, Math.ceil(needed - available));
-  if (shortfall > 0) root.style.paddingBottom = `${shortfall}px`;
+  if (shortfall > 0) root.style.setProperty("--scrolly-tail", `${shortfall}px`);
 }
 
 function setup(root: HTMLElement) {
