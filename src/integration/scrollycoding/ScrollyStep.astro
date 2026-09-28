@@ -2,10 +2,13 @@
 interface Props {
   index: string | number;
   title?: string;
+  /** Depth of the `!!steps` heading it came from; h3 when used by hand without one. */
+  depth?: string | number;
 }
 
-const { index, title } = Astro.props;
+const { index, title, depth = 3 } = Astro.props;
 const i = Number(index);
+const Heading = `h${Math.min(Math.max(Number(depth) || 3, 1), 6)}` as "h3";
 ---
 
 <section
@@ -14,7 +17,7 @@ const i = Number(index);
   data-index={i}
   data-selected={i === 0 ? "true" : "false"}
 >
-  {title && <h3 class="scrolly-step__title">{title}</h3>}
+  {title && <Heading class="scrolly-step__title">{title}</Heading>}
   <slot />
 </section>
 

@@ -6,7 +6,7 @@ import { Icon } from "astro-icon/components";
 
 <header>
   <div class="title">
-    <a href="/">
+    <a href="/" aria-label="Home">
       <video
         autoplay
         muted
@@ -34,7 +34,7 @@ import { Icon } from "astro-icon/components";
       <HeaderLink href="https://github.com/theor" target="_blank">
         GitHub
       </HeaderLink>{" "}
-      <HeaderLink href="/rss.xml">
+      <HeaderLink href="/rss.xml" aria-label="RSS feed">
         <Icon name="mdi:rss" />
       </HeaderLink>
     </nav>
