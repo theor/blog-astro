@@ -107,14 +107,17 @@ const parseTitle = (heading: Heading): string => {
 
 interface Step {
   title: string;
+  /** The `!!steps` heading's own depth, so the rendered step title keeps the outline. */
+  depth: number;
   prose: RootContent[];
   code: Code | null;
   codeTitle: string | null;
   numbers: boolean;
 }
 
-const newStep = (title: string): Step => ({
+const newStep = (title: string, depth: number): Step => ({
   title,
+  depth,
   prose: [],
   code: null,
   codeTitle: null,
@@ -173,7 +176,7 @@ function parseSteps(node: any, file: any): Step[] {
 
   for (const child of children) {
     if (isStepHeading(child)) {
-      steps.push(newStep(parseTitle(child)));
+      steps.push(newStep(parseTitle(child), child.depth));
       continue;
     }
 
@@ -224,7 +227,11 @@ function buildBlock(node: any, steps: Step[], palette: Palette): void {
   node.name = NAMES.root;
   node.attributes = [];
   node.children = steps.flatMap((step, i) => [
-    element(NAMES.step, [attr("index", String(i)), attr("title", step.title)], step.prose),
+    element(
+      NAMES.step,
+      [attr("index", String(i)), attr("title", step.title), attr("depth", String(step.depth))],
+      step.prose,
+    ),
     element(
       NAMES.panel,
       [

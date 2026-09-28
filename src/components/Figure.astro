@@ -5,12 +5,29 @@ interface Props {
   alt: string;
   caption: string;
   width?: number | `${number}`;
+  loading?: "lazy" | "eager";
+  fetchpriority?: "high" | "low" | "auto";
 }
-const { src,alt,caption,  width, ...rest } = Astro.props;
+const { src, alt, caption, width, loading, fetchpriority, ...rest } = Astro.props;
 // replace src={import("./([^")}]*") by src={import("./$1)}
+
+// Candidate widths for the srcset. The body column is 75ch and <Wide> tops out at
+// 60rem, so nothing is ever drawn wider than ~960 CSS px - 1600 covers 2x screens
+// with headroom. Only widths below the original are kept, plus the original itself.
+const STEPS = [480, 800, 1200, 1600];
+// SVGs aren't rasterized and GIFs may be animated: leave those untouched.
+const resizable = src.format !== "svg" && src.format !== "gif";
+const widths = resizable && !width
+  ? [...STEPS.filter(w => w < src.width), src.width]
+  : undefined;
+const sizing = width
+  ? { width, densities: resizable ? [1, 2] : undefined }
+  : widths
+    ? { widths, sizes: "(max-width: 60rem) 100vw, 60rem" }
+    : {};
 ---
 <style>
-    figure { 
+    figure {
         display: flex;
         flex-direction: column;
         flex: 1;
@@ -18,7 +35,7 @@ const { src,alt,caption,  width, ...rest } = Astro.props;
          }
 </style>
 <figure class="blog-post-figure" {...rest}>
-    <Image src={src} alt={alt || caption} width={width}/>
+    <Image src={src} alt={alt || caption} loading={loading} fetchpriority={fetchpriority} {...sizing}/>
   <!-- {children && <figcaption><slot /></figcaption>} -->
   {caption && <figcaption>{caption}</figcaption>}
 </figure>
