@@ -219,6 +219,20 @@ const palette = [bg && `--ch-bg:${bg}`, fg && `--ch-fg:${fg}`].filter(Boolean).j
     }
   }
 
+  /* Keep in step with the media query below - see Scrollycoding.astro. */
+  :global(:root[data-scrolly-layout="stacked"]) .scrolly-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    margin-bottom: var(--spacing-8, 2rem);
+  }
+
+  :global(:root[data-scrolly-layout="stacked"]) .scrolly-panel[data-selected] {
+    opacity: 1;
+    pointer-events: auto;
+    user-select: auto;
+  }
+
   @media (max-width: 60rem) {
     .scrolly-panel {
       position: static;

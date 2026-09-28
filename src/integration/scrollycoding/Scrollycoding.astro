@@ -1,4 +1,18 @@
+<!-- Applies a saved "stacked" preference before the block paints, so a reader who opted
+     out of side-by-side doesn't see it flash in first. Deliberately inline (and so
+     repeated per block): a bundled module would only run after first paint. -->
+<script is:inline>
+  try {
+    if (localStorage.getItem("scrolly-layout") === "stacked")
+      document.documentElement.dataset.scrollyLayout = "stacked";
+  } catch {}
+</script>
+
 <div class="scrolly" data-scrolly data-selected-index="0">
+  <!-- Hidden until the script wires it up: without JS there is nothing to toggle. -->
+  <button type="button" class="scrolly__layout-toggle" data-scrolly-layout-toggle hidden>
+    Show code inline
+  </button>
   <slot />
 </div>
 
@@ -29,6 +43,7 @@
     box-shadow: 0 0 0 100vmax var(--scrolly-band);
     clip-path: inset(0 -100vmax);
 
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0 var(--spacing-8, 2rem);
@@ -41,10 +56,43 @@
        selection to serve, so zero is right. */
   }
 
+  /* Sits in the band's top padding, so it takes no room from the steps or the panel. */
+  .scrolly__layout-toggle {
+    position: absolute;
+    top: 0.6rem;
+    right: 0;
+    padding: 0.2rem 0.6rem;
+    font-family: Montserrat, sans-serif;
+    font-size: 0.75rem;
+    color: #555;
+    background: transparent;
+    border: 1px solid #d4d2dc;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .scrolly__layout-toggle:hover {
+    color: var(--color-primary, #005b99);
+    border-color: currentColor;
+  }
+
+  /* The stacked rules exist twice: once for narrow viewports, once for readers who
+     asked for them. A selector can't sit inside a media query's condition, so the pair
+     has to be kept in step by hand - the same goes for ScrollyStep and ScrollyPanel. */
+  :global(:root[data-scrolly-layout="stacked"]) .scrolly {
+    display: block;
+    width: auto;
+  }
+
   @media (max-width: 60rem) {
     .scrolly {
       display: block;
       width: auto;
+    }
+
+    /* Nothing to choose between: narrow is always stacked. */
+    .scrolly__layout-toggle {
+      display: none;
     }
   }
 </style>
