@@ -19,21 +19,21 @@ I love procedural generation, and I wanted to generate a world _history_ like Dw
 
 </Wide>
 
-# What's history ? A sample
+# What's history? A sample
 
 > A chronological record of significant events (such as those affecting a nation or institution) often including an explanation of their causes
 > (Merriam-Webster)
 
-Moirai is a language to describe entities and events happening to them, a runtime to execute the language, a UI to explore the data, and a VS Code LSP, written in C# with minimal dependencies. It can run as a Svelte frontend using an asp.net core api or a WASM build, and I intend to test it in Unity too.
+Moirai is a language to describe entities and events happening to them, a runtime to execute the language, a UI to explore the data, and an LSP server for VS Code, all written in C# with minimal dependencies. The UI is a Svelte frontend backed either by an ASP.NET Core API or by a WASM build of the engine, and I intend to test it in Unity too.
 
-If you want to give a try to the WASM build, it's hosted as a github pages site: [theor.github.io/Moirai/](https://theor.github.io/Moirai/) and the repo with desktop releases is here: [github.com/theor/Moirai](https://github.com/theor/Moirai).
+If you want to give the WASM build a try, it's hosted on GitHub Pages: [theor.github.io/Moirai/](https://theor.github.io/Moirai/) and the repo with desktop releases is here: [github.com/theor/Moirai](https://github.com/theor/Moirai).
 
 ![Site](./site.png)
 
 
 # The language
 
-The language is a mix of rust, C# and F# - with room for improvement, as the history of the project shows through the syntax.
+The language is a mix of Rust, C# and F# - with room for improvement, as the history of the project shows through the syntax.
 
 ## A sample world
 
@@ -52,7 +52,7 @@ entity Artifact {
 
 ## !!steps Events
 
-Then we can declare an event, that will happen randomly every 15 years. The UI will already show records
+Then we can declare an event that will happen, on average, once every 15 years. The UI already shows records:
 ![First items](./blog-1.png)
 
 ```moirai ! sample.moi
@@ -72,9 +72,9 @@ event artifact_created() {
 }
 ```
 ## !!steps Random tables
-The names are boring ; let's add a couple of tables, which can be used to picked random values like you would when playing a TTRPG.
+The names are boring; let's add a couple of tables, which can be used to pick random values like you would when playing a TTRPG.
 ![Name interpolation](./blog-2.png)
-Who doesn't want a Keychain of Destiny ?
+Who doesn't want a Keychain of Destiny?
 
 ```moirai ! sample.moi
 entity Artifact {
@@ -133,7 +133,7 @@ event artifact_created() {
 
 Because no person exists and the `pick` call is unconditional, the event will exit early. `pick`s can be made conditional by putting them in an `if`: `if(pick Person $p) { ... }`
 
-Let's create a few people at startup, using the @start attribute on an event:
+Let's create a few people at startup, using the `@start` attribute on an event:
 
 ``` moirai ! sample.moi
 entity Artifact {
@@ -184,15 +184,15 @@ entity Artifact {
     prop owner: Person
 }
 // !focus
-@display(Artifact, 'Artifacts owned',owner = $self)
+@display(Artifact, 'Artifacts owned', owner = $self)
 entity Person { ... }
 ```
-![Name interpolation](./blog-items.png)
+![Artifacts owned query](./blog-items.png)
 
 ## !!steps On created trigger
 
 In addition to events, which happen randomly, you can also declare triggers, which react to changes.
-We can refactor the birth record as a trigger run when a `Person` is created, and also set a flag `alive` to `true`:
+We can refactor the birth record into a trigger that runs when a `Person` is created, and also set a flag `alive` to `true`:
 
 ![On Created Trigger](./blog-trigger-birth.png)
 
@@ -229,7 +229,7 @@ trigger birth {
 
 ## !!steps On change trigger
 
-Similarly, a trigger can react to a property change. A new event causes random persons to die ; a trigger reacts to `alive = false` and records the death.
+Similarly, a trigger can react to a property change. A new event causes random people to die; a trigger reacts to `alive = false` and records the death.
 
 ![On Changed Trigger](./blog-trigger-death.png)
 
@@ -271,7 +271,7 @@ trigger death {
 
 ## !!steps A trigger to give the deceased items away
 
-Building on the previous example, when a person dies, we can iterate on its owned items to give them to someone else.
+Building on the previous example, when a person dies, we can iterate over their items to give them to someone else.
 
 ![Items being given on death of the owner](./blog-trigger-items.png)
 
@@ -320,7 +320,7 @@ trigger death {
 
 # On storytelling and morality
 
-I quickly encountered two issues: it takes a _lot_ of rules to model a world worth narrating, and encoding  a morality in those rules is _hard_. Here is an example with weddings.
+I quickly encountered two issues: it takes a _lot_ of rules to model a world worth narrating, and encoding morality in those rules is _hard_. Here is an example with weddings.
 
 <Scrollycoding>
 ## !!steps First definition
@@ -345,7 +345,7 @@ event wedding {
 `945` **Brenna Brackenridge** and **Dorian Ambervale** get married
 </Records>
 
-By failing to define marriage properly, I first encountered narcissicm (people marrying themselves, `$x == $y`) and group mariage (`partner != null`. Accepted in some cultures, not the one I was modeling). We can add a couple of checks for that.
+By failing to define marriage properly, I first encountered narcissism (people marrying themselves, `$x == $y`) and group marriage (`partner != null`: accepted in some cultures, but not the one I was modeling). We can add a couple of checks for that.
 
 ```moirai !
 event wedding {
@@ -397,16 +397,16 @@ event wedding {
 }
 ```
 
-## !!steps What's a tree anyway ?
+## !!steps What's a tree anyway?
 
 <Records>
 `745` **Chandra Ambervale** has a child, **Brenna Brackenridge**
 
 `775` **Chandra Ambervale** and **Brenna Brackenridge** get married
 </Records>
-I first added a `$y != $x.parent1 and $y != $x.parent2`, then `$x.parent1 != $y.parent1 ...`, then wondered: what are the formal definitions of consanguinity, both legally and in terms of graph theory ?
+I first added a `$y != $x.parent1 and $y != $x.parent2`, then `$x.parent1 != $y.parent1 ...`, then wondered: what are the formal definitions of consanguinity, both legally and in terms of graph theory?
 
-The common name for this metric is "degree of kinship". In terms of graphs, it's the shortest path from one vertex (individual) to another. In civil-law, the Roman way of counting kinship is used: find an ancestor they share, count the generations from each individual to their shared ancestor, sum that.
+The common name for this metric is "degree of kinship". In terms of graphs, it's the shortest path from one vertex (individual) to another. In civil law, the Roman method of counting kinship is used: find the closest common ancestor, count the generations from each individual up to that ancestor, and sum both counts.
 
 I added a built-in function for that:
 ```moirai
@@ -446,9 +446,9 @@ public readonly struct EntityTypeId : IEquatable<EntityTypeId>
 
 ```
 
-They all are readonly structs wrapping uints. Ids start at 1 - structs are easy to mis-initialize, so using `default(T)` as an invalid sentinel value make debugging easier in my experience, and when using ids to index a C# 0-based array, I usually either add an empty value at index 0 in the array or implement a custom indexer handling the -1/+1 offset.
+They are all readonly structs wrapping uints. IDs start at 1: structs are easy to mis-initialize, so using `default(T)` as an invalid sentinel value makes debugging easier in my experience. When using IDs to index a 0-based C# array, I usually either add an empty value at index 0 or implement a custom indexer handling the -1/+1 offset.
 
-Values are stored as either a reference to a string, an int or a float ; everything else is type safety on top of it.
+Values are stored as either a reference to a string, an int or a float; everything else is type safety on top of it.
 
 Value types are a pair of an enum and an optional index for references:
 ```csharp
@@ -501,14 +501,14 @@ Most of my queries start with a type filter, so entities are indexed by type id.
 
 ## Events
 
-The database also has a list of events (and triggers, see below), which both contain a list of instructions. They implement a `PropertyValue Compute(ExecuteContext ctx)` method - literals, expressions, function calls, if and match statements etc. This is a classic AST evaluator - I did consider converting it to some kind of bytecode, but as querying the database take way longer than the base instruction execution, it went down the priority list.
+The database also has a list of events (and triggers, see below), which both contain a list of instructions. They implement a `PropertyValue Compute(ExecuteContext ctx)` method - literals, expressions, function calls, if and match statements etc. This is a classic AST evaluator - I did consider converting it to some kind of bytecode, but as querying the database takes way longer than the base instruction execution, it went down the priority list.
 
-Events can start four ways: by being called explicitely or by being scheduled from another event, when resetting the database if they have a `@start` attribute, or when they are drawn randomly according to their `@frequency` tag, which come in two variants.
+Events can start in four ways: by being called explicitly, by being scheduled from another event, when resetting the database if they have a `@start` attribute, or when they are drawn randomly according to their `@frequency(X, mode, Y)` attribute, which comes in two modes.
 
 ### EveryXYear: a fixed count, random timing
 
-@frequency(3, EveryXYear, 10) means exactly 3 runs in every 10-year window. 
-- When Y = 1: the event runs exactly X times every year and draws no random numbers. @frequency(1, EveryXYear, 1) is the usual "every year" tick.
+`@frequency(3, EveryXYear, 10)` means exactly 3 runs in every 10-year window. 
+- When Y = 1: the event runs exactly X times every year and draws no random numbers. `@frequency(1, EveryXYear, 1)` is the usual "every year" tick.
 - When Y > 1: at the start of each window, the engine picks a random year inside the window for each of the X runs.
   - Each pick is made separately, so two runs can land in the same year.
   - The first window starts at the first year the scheduler checks, not at year 0.
@@ -516,14 +516,14 @@ Events can start four ways: by being called explicitely or by being scheduled fr
 
 ### PerXYear: an average rate
 
-@frequency(1, PerXYear, 5) means on average 1 run every 5 years. 
+`@frequency(1, PerXYear, 5)` means on average 1 run every 5 years. 
 - Each year, the number of runs is drawn at random with an average of X / Y (a Poisson draw).
-- A year can have 0, 1 or several runs. @frequency(4, PerXYear, 1) averages 4 a year but varies.
+- A year can have 0, 1 or several runs. `@frequency(4, PerXYear, 1)` averages 4 a year but varies.
 - There is no window, so gaps and bursts happen. Over a long run the average matches X / Y, but there is no fixed count.
 
 ## Records and changesets
 
-The database keeps two separate logs: records are the story, the prose you write.
+The database keeps two separate logs: records and changesets. Records are the story, the prose you write:
 ```moirai
 event create_artifact() {
     record('Artifact {$a.name} has been created. {$p.name} owns it.')
@@ -532,11 +532,11 @@ event create_artifact() {
 
 Records have an optional weight (to filter important events), a year, a list of entity ids to follow references, optional tags for UI filtering and a source action. They're also linked to changesets.
 
-Changesets make the ledger of the database. Running an event opens a changeset, and any `set` property or `create` entity is included. Each change is stored as a delta. They drive the triggers.
+Changesets are the database's ledger. Running an event opens a changeset, and every property `set` and entity `create` is added to it. Each change is stored as a delta. Changesets are what drive triggers.
 
 ## Triggers
 
-Triggers are run automatically _in reaction to_ created or changed entities. They expose two variables: `$old` if it's a change, `$new` in both cases. The `when` clause at the beginning is used to early exit irrelevant triggers  
+Triggers are run automatically _in reaction to_ created or changed entities. They expose two variables: `$old` if it's a change, `$new` in both cases. The `when` clause at the beginning is used to exit irrelevant triggers early.
 
 ```moirai
 trigger inherit {
@@ -547,7 +547,7 @@ trigger inherit {
 
 ### Scheduling
 
-A past bottleneck in my test world was checking each year if people grew up. I use an `Age` enum where each value represents a 20 years slice of life. Initially it looked something like that:
+A past bottleneck in my test world was checking each year if people grew up. I use an `Age` enum where each value represents a 20-year slice of life. Initially it looked something like this:
 
 ```moirai
 enum Age { Child, Young, Adult, Old, Dead }
@@ -561,7 +561,7 @@ entity Person {
 @frequency(1, EveryXYear, 1)
 event people_grow {
     each Person $p: (alive = true, age = Age.Child, (birthdate + 20) <= #Time.year){
-        set $p.age = Age.Adult
+        set $p.age = Age.Young
     }
     each Person $p: (alive = true, age = Age.Young, (birthdate + 40) <= #Time.year){
         set $p.age = Age.Adult
@@ -575,9 +575,9 @@ event people_grow {
     // ...
 }
 ```
-It means that every year, we query every person at least once. This is one the reason I indexed boolean properties. It can be refactored to iterate once on every person ; it could be run exactly once every 5 or 10 years if people growing up doesn't have to be exact. 
+It means that every year, we query every person at least once. This is one of the reasons I indexed boolean properties. It could be refactored to iterate over every person only once, or to run once every 5 or 10 years if aging doesn't have to be exact.
 
-I then realized this would work better event-driven instead of polled, by scheduling effects :
+I then realized this would work better event-driven instead of polled, by scheduling effects:
 
 ```moirai
 trigger born {
@@ -588,9 +588,9 @@ trigger born {
         if $self.alive {
             set $self.age = Age.Young
             random_weighted 25 {
-                5 => set $p.job = Job.Smith
-                10 => set $p.job = Job.Merchant
-                10 => set $p.job = Job.Monk
+                5 => set $self.job = Job.Smith
+                10 => set $self.job = Job.Merchant
+                10 => set $self.job = Job.Monk
             }
         }
     }
@@ -600,7 +600,7 @@ trigger born {
 
 # Testing
 
-On top of standard arrange-act-assert tests, the parser also pretty-prints the parsed code and ensures the parsing-printing is idempotent.
+On top of standard arrange-act-assert tests, the parser tests pretty-print the parsed code and check that the parse/print round trip is idempotent.
 
 Engine tests use stories written inline or fixture files.
 
@@ -608,29 +608,29 @@ Engine tests use stories written inline or fixture files.
 
 # Profiling and performance
 
-A simulated year allocates only storage. Everything the world keeps grows in chunks: `ChunkedList\<T\>` (1024 items per chunk) and `Slab\<T\>` (~64 KB arrays). Strings can live in a `Slab\<char\>`. BytesPerYear measures this: the median year of the `w.sg` test world allocates 0 bytes.
+A simulated year allocates only storage. Everything the world keeps grows in chunks: `ChunkedList<T>` (1024 items per chunk) and `Slab<T>` (~64 KB arrays). Strings can live in a `Slab<char>`. BytesPerYear measures this: the median year of the `w.sg` test world allocates 0 bytes.
 
 1000 years of w.sg allocate 17.8 MB, with about 6 ms of GC pause and 21 MB live afterwards.
 
-Profiler: --profile prints a table per event and per trigger for each pass. It shows invocations, hit %, self and inclusive time, and allocated KB.
+Profiler: `--profile` prints a table per event and per trigger for each pass. It shows invocations, hit %, self and inclusive time, and allocated KB.
 
 Rule coverage counters are always on. The Rules page uses them to flag rules that never ran and rules that never completed.
 
 # Parsing and LSP
 
-The parser lives in a different DLL - the plan was to allow ahead-of-time parsing to some serializable format that could be run by the engine dll, but I never got there.
+The parser lives in a separate DLL: the plan was to allow ahead-of-time parsing to some serializable format that could be run by the engine DLL, but I never got there.
 
-I initiallly used ANTLR. Its grammar is great, but the build pipeline is not my favorite, especially when you need java in the mix. I then migrated to [Superpowers](https://github.com/datalust/superpower), a really nice C# parser combinator library.
+I initially used ANTLR. Its grammar is great, but the build pipeline is not my favorite, especially with Java in the mix. I then migrated to [Superpower](https://github.com/datalust/superpower), a really nice C# parser combinator library.
 
-There is a separate entry point to parse for the LSP server, which keeps references to the source tokens in the parsed AST. That way, the LSP can locate error squiggles and symbol definitions correctly.
+There is a separate parsing entry point for the LSP server, which keeps references to the source tokens in the parsed AST. That way, the LSP can locate error squiggles and symbol definitions correctly.
 
 ![LSP1](./lsp1.png)
 ![LSP2](./lsp2.png)
 
 # Hosts
 
-The main UI is a Svelte SPA, which can either hit an ASP.net core API exposing an engine instance or a WASM build of the engine.
-It shows the record and changeset feeds, can filter by entities, show one entity properties and history, do DB queries, show a family tree, and more.
+The main UI is a Svelte SPA, which can either hit an ASP.NET Core API exposing an engine instance or a WASM build of the engine.
+It shows the record and changeset feeds, can filter by entity, show an entity's properties and history, do DB queries, show a family tree, and more.
 
 ![web-records](./web-records.png)
 ![web-properties](./web-properties.png)
@@ -642,10 +642,10 @@ The WASM build has an embedded story editor for demo purposes:
 
 ![web-story](./web-story.png)
 
-I should get on writing a Unity host...
+I should get around to writing a Unity host...
 
 # Conclusion
 
-I hope this was a fun read. I don't know if this will ever be useful to someone else, but I definitely will use it next time I run a TTRPG. Until then !
+I hope this was a fun read. I don't know if this will ever be useful to someone else, but I will definitely use it next time I run a TTRPG. Until then!
 
 
