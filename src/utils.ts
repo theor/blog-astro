@@ -42,3 +42,11 @@ export const findImage = async (imagePath?: string) => {
 export const isVideo = (x: string): boolean => {
   return x.endsWith("webm") || x.endsWith("mp4") || x.endsWith("m4v");
 };
+
+/** Drafts are shown in dev and non-production builds; hidden when IS_PRODUCTION is set.
+ * Env vars are strings ("true"), so never compare against the boolean `true`. */
+const isProduction = [import.meta.env.IS_PRODUCTION, process.env.IS_PRODUCTION].some(
+  (v) => String(v).toLowerCase() === "true" || String(v) === "1"
+);
+export const showDrafts = import.meta.env.DEV || !isProduction;
+export const isVisible = (post: { data: { draft?: boolean } }) => showDrafts || !post.data.draft;

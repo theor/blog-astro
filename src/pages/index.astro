@@ -4,14 +4,14 @@ import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
 import { SITE_TITLE, SITE_DESCRIPTION } from "../consts";
 import { getCollection, render } from "astro:content";
-import { findImage, isVideo } from "../utils";
+import { findImage, isVideo, isVisible } from "../utils";
 import BlogPostMetadata from "../components/BlogPostMetadata.astro";
 // const posts =  (await getCollection('blog', x => !x.data.draft)).sort(
 // 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 // );
 let posts = await Promise.all(
     (
-        await getCollection("blog", (x) => !import.meta.env.DEV && import.meta.env.IS_PRODUCTION === true ? !x.data.draft : true)
+        await getCollection("blog", isVisible)
     )
         .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
         .map(async (x) => {

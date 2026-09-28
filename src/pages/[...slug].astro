@@ -1,10 +1,10 @@
 ---
 import { CollectionEntry, getCollection, render } from "astro:content";
 import BlogPost from "../layouts/BlogPost.astro";
+import { isVisible } from "../utils";
 
 export async function getStaticPaths() {
-  console.log("PROD", import.meta.env, import.meta.env.IS_PRODUCTION, import.meta.env.IS_PRODUCTION === true);
-  const posts = await getCollection("blog", (x) => (!import.meta.env.DEV && import.meta.env.IS_PRODUCTION === true) ? !x.data.draft : true);
+  const posts = await getCollection("blog", isVisible);
   // console.log(posts.map(x => [x.id, x.data]));
   return posts.map((post) => ({
     params: { slug: post.id },
